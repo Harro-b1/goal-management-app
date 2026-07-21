@@ -33,6 +33,7 @@ public class Goal {
     @JoinColumn(name = "type")
     private Type type;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "priority")
     private PriorityLevel priority;
 }
