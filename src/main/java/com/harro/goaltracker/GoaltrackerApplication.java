@@ -9,5 +9,5 @@ public class GoaltrackerApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(GoaltrackerApplication.class, args);
 	}
-
+	
 }
