@@ -2,12 +2,18 @@ package com.harro.goaltracker.controllers;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.HttpClientErrorException.UnprocessableContent;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.harro.goaltracker.Repositories.GoalRepository;
 import com.harro.goaltracker.Repositories.TypeRepository;
@@ -56,6 +62,31 @@ public class GoalController {
         goalRepository.save(goal);
 
         return ResponseEntity.ok(goalMapper.toDto(goal));
+    }
+
+    @PostMapping
+    public ResponseEntity<GoalDto> createGoal(
+        @RequestBody GoalDto request,
+        UriComponentsBuilder uriBuilder
+    ){
+        request.setId(null);
+        var goal = goalMapper.toEntity(request);
+
+        if(request.getType() == null){
+            return ResponseEntity.badRequest().build();
+        }
+
+        var type = typeRepository.findById(request.getType()).orElse(null);
+        if(type == null){
+            return new ResponseEntity<>(HttpStatusCode.valueOf(422));
+        }
+            goal.setType(type);
+        goalRepository.save(goal);
+
+        var goalDto = goalMapper.toDto(goal); 
+
+        var uri = uriBuilder.path("/goals/{id}").buildAndExpand(goalDto.getId()).toUri();
+        return ResponseEntity.created(uri).body(goalDto);
     }
 
     @PutMapping("/{id}/uncomplete")

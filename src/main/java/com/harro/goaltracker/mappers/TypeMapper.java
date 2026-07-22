@@ -8,4 +8,5 @@ import com.harro.goaltracker.entities.Type;;
 @Mapper(componentModel = "spring")
 public interface TypeMapper {
     TypeDto toDto(Type type);
+    Type toEntity(TypeDto dto);
 }
