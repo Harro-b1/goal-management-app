@@ -1,6 +1,7 @@
 package com.harro.goaltracker.controllers;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpClientErrorException.UnprocessableContent;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -47,6 +49,13 @@ public class GoalController {
         }
 
         return ResponseEntity.ok(goalMapper.toDto(goal));
+    }
+
+    @GetMapping("/search")
+    public List<GoalDto> searchGoals(@RequestParam(name = "query") String query){
+        List<Goal> goals = goalRepository.searchGoalsByString(query);
+
+        return goals.stream().map(goalMapper::toDto).toList();
     }
 
     @PutMapping("/{id}/complete")
