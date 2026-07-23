@@ -17,9 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpClientErrorException.UnprocessableContent;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.harro.goaltracker.Repositories.GoalRepository;
-import com.harro.goaltracker.Repositories.TypeRepository;
 import com.harro.goaltracker.mappers.GoalMapper;
+import com.harro.goaltracker.repositories.GoalRepository;
+import com.harro.goaltracker.repositories.TypeRepository;
 import com.harro.goaltracker.dtos.GoalDto;
 import com.harro.goaltracker.entities.Goal;
 

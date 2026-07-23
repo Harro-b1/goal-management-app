@@ -11,10 +11,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.harro.goaltracker.Repositories.TypeRepository;
 import com.harro.goaltracker.dtos.TypeDto;
 import com.harro.goaltracker.entities.Type;
 import com.harro.goaltracker.mappers.TypeMapper;
+import com.harro.goaltracker.repositories.TypeRepository;
 
 import lombok.AllArgsConstructor;
 

@@ -1,4 +1,4 @@
-package com.harro.goaltracker.Repositories;
+package com.harro.goaltracker.repositories;
 
 import java.util.List;
 
