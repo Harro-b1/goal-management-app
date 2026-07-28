@@ -1,17 +1,35 @@
+DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS schedules;
 DROP TABLE IF EXISTS goals;
 DROP TABLE IF EXISTS categories;
 
 CREATE TABLE categories (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE
 );
 
 CREATE TABLE goals (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     completed BOOLEAN NOT NULL DEFAULT FALSE,
-    category INT,
+    category BIGINT,
     priority ENUM('LOW', 'MEDIUM', 'HIGH') NOT NULL DEFAULT 'MEDIUM',
     FOREIGN KEY (category) REFERENCES categories(id)
+);
+
+CREATE TABLE schedules (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    date DATE NOT NULL
+);
+
+CREATE TABLE events (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    goal BIGINT,
+    schedule BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    FOREIGN KEY (goal) REFERENCES goals(id),
+    FOREIGN KEY (schedule) REFERENCES schedules(id)
 );

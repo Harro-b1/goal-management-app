@@ -88,15 +88,13 @@ public class GoalController {
         request.setId(null);
         var goal = goalMapper.toEntity(request);
 
-        if(request.getCategory() == null){
-            return ResponseEntity.badRequest().build();
-        }
-
-        var category = categoryRepository.findById(request.getCategory()).orElse(null);
-        if(category == null){
-            return new ResponseEntity<>(HttpStatusCode.valueOf(422));
-        }
+        if(request.getCategory() != null){
+            var category = categoryRepository.findById(request.getCategory()).orElse(null);
+            if(category == null){
+                return new ResponseEntity<>(HttpStatusCode.valueOf(422));
+            }
             goal.setCategory(category);
+        }
         goalRepository.save(goal);
 
         var goalDto = goalMapper.toDto(goal); 

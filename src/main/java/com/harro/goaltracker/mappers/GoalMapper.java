@@ -10,6 +10,6 @@ import com.harro.goaltracker.entities.Goal;
 public interface GoalMapper {
     @Mapping(source = "category.id", target = "category")
     GoalDto toDto(Goal goal);
-    @Mapping(source = "category", target = "category.id")
+    @Mapping(target = "category", ignore = true)
     Goal toEntity(GoalDto dto);
 }
