@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS event_templates;
+DROP TABLE IF EXISTS schedule_templates;
 DROP TABLE IF EXISTS events;
 DROP TABLE IF EXISTS schedules;
 DROP TABLE IF EXISTS goals;
@@ -32,4 +34,20 @@ CREATE TABLE events (
     end_time TIME NOT NULL,
     FOREIGN KEY (goal) REFERENCES goals(id),
     FOREIGN KEY (schedule) REFERENCES schedules(id)
+);
+
+CREATE TABLE schedule_templates (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE event_templates (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    goal BIGINT,
+    schedule_template BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    FOREIGN KEY (goal) REFERENCES goals(id),
+    FOREIGN KEY (schedule_template) REFERENCES schedule_templates(id)
 );

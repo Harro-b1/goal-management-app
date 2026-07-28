@@ -20,3 +20,12 @@ INSERT INTO events (goal, schedule, name, start_time, end_time) VALUES
     (3, 2, 'Spring Boot study session', '18:00:00', '19:30:00'),
     (NULL, 2, 'Dentist appointment', '11:00:00', '11:45:00'),
     (5, 3, 'Reading time', '20:00:00', '21:00:00');
+
+INSERT INTO schedule_templates (name) VALUES
+    ('Weekday Routine'),
+    ('Weekend Routine');
+
+INSERT INTO event_templates (goal, schedule_template, name, start_time, end_time) VALUES
+    (1, 1, 'Morning run', '07:00:00', '07:30:00'),
+    (NULL, 1, 'Team standup', '09:00:00', '09:15:00'),
+    (3, 2, 'Weekend study block', '10:00:00', '12:00:00');
