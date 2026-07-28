@@ -1,27 +1,24 @@
 package com.harro.goaltracker;
 
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
 
-@Testcontainers
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
 public abstract class AbstractIntegrationTest {
 
-    @Configuration(proxyBeanMethods = false)
-    static class MySQLContainerConfig {
+    @ServiceConnection
+    static final MySQLContainer mysql = new MySQLContainer("mysql:8.0");
 
-        @Bean
-        @ServiceConnection
-        MySQLContainer mysqlContainer() {
-            return new MySQLContainer("mysql:8.0");
-        }
+    static {
+        // Singleton container pattern: started once for the whole JVM and never
+        // explicitly stopped, since JUnit's @Container lifecycle would stop it
+        // after each test class's afterAll, breaking it for the next class that
+        // shares this static field. Ryuk reaps it when the JVM exits.
+        mysql.start();
     }
 }
