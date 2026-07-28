@@ -8,8 +8,8 @@ import com.harro.goaltracker.entities.Goal;
 
 @Mapper(componentModel = "spring")
 public interface GoalMapper {
-    @Mapping(source = "type.id", target = "type")
+    @Mapping(source = "category.id", target = "category")
     GoalDto toDto(Goal goal);
-    @Mapping(source = "type", target = "type.id")
+    @Mapping(source = "category", target = "category.id")
     Goal toEntity(GoalDto dto);
 }

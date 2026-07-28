@@ -10,6 +10,6 @@ public class GoalDto {
     private String name;
     private String description;
     private boolean completed;
-    private Long type;
+    private Long category;
     private PriorityLevel priority;
 }

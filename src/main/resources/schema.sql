@@ -1,7 +1,7 @@
 DROP TABLE IF EXISTS goals;
-DROP TABLE IF EXISTS types;
+DROP TABLE IF EXISTS categories;
 
-CREATE TABLE types (
+CREATE TABLE categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE
 );
@@ -11,7 +11,7 @@ CREATE TABLE goals (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     completed BOOLEAN NOT NULL DEFAULT FALSE,
-    type INT,
+    category INT,
     priority ENUM('LOW', 'MEDIUM', 'HIGH') NOT NULL DEFAULT 'MEDIUM',
-    FOREIGN KEY (type) REFERENCES types(id)
+    FOREIGN KEY (category) REFERENCES categories(id)
 );

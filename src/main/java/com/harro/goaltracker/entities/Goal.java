@@ -30,8 +30,8 @@ public class Goal {
     private boolean completed;
 
     @ManyToOne(cascade = CascadeType.PERSIST)
-    @JoinColumn(name = "type")
-    private Type type;
+    @JoinColumn(name = "category")
+    private Category category;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "priority")
