@@ -5,6 +5,8 @@ import org.mapstruct.Mapping;
 
 import com.harro.goaltracker.dtos.EventDto;
 import com.harro.goaltracker.entities.Event;
+import com.harro.goaltracker.entities.EventTemplate;
+import com.harro.goaltracker.entities.Schedule;
 
 @Mapper(componentModel = "spring")
 public interface EventMapper {
@@ -14,4 +16,8 @@ public interface EventMapper {
     @Mapping(target = "goal", ignore = true)
     @Mapping(target = "schedule", ignore = true)
     Event toEntity(EventDto dto);
+
+    @Mapping(source = "schedule", target = "schedule")
+    @Mapping(target = "id", ignore = true)
+    Event toEvent(EventTemplate template, Schedule schedule);
 }
