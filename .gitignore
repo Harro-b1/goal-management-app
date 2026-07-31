@@ -32,5 +32,23 @@ build/
 ### VS Code ###
 .vscode/
 
+### Claude ###
+.claude/
+
 ### Env ###
 .env
+
+### React (app/) ###
+/app/node_modules
+/app/.pnp
+app/.pnp.js
+/app/coverage
+/app/build
+.DS_Store
+app/.env.local
+app/.env.development.local
+app/.env.test.local
+app/.env.production.local
+app/npm-debug.log*
+app/yarn-debug.log*
+app/yarn-error.log*

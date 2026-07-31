@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,6 +31,7 @@ import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 
 @RestController
+@CrossOrigin
 @AllArgsConstructor
 @RequestMapping("/schedules")
 public class ScheduleController {
@@ -109,7 +111,6 @@ public class ScheduleController {
         UriComponentsBuilder uriBuilder
     ){
         var schedule = scheduleMapper.toEntity(request);
-        schedule.setId(null);
         scheduleRepository.save(schedule);
 
         var scheduleDto = scheduleMapper.toDto(schedule);

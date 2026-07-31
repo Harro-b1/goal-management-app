@@ -22,7 +22,7 @@ CREATE TABLE goals (
 
 CREATE TABLE schedules (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    date DATE NOT NULL
+    date DATE NOT NULL UNIQUE
 );
 
 CREATE TABLE events (
@@ -38,7 +38,7 @@ CREATE TABLE events (
 
 CREATE TABLE schedule_templates (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL
+    name VARCHAR(255) NOT NULL UNIQUE
 );
 
 CREATE TABLE event_templates (
