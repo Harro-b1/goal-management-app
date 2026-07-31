@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -82,5 +83,16 @@ public class EventTemplateController {
 
         var uri = uriBuilder.path("/event-templates/{id}").buildAndExpand(eventTemplateDto.getId()).toUri();
         return ResponseEntity.created(uri).body(eventTemplateDto);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEventTemplate(@PathVariable(name="id") Long id){
+        var eventTemplate = eventTemplateRepository.findById(id).orElse(null);
+        if(eventTemplate == null){
+            return ResponseEntity.notFound().build();
+        }
+
+        eventTemplateRepository.delete(eventTemplate);
+        return ResponseEntity.noContent().build();
     }
 }

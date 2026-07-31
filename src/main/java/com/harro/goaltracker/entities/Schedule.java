@@ -1,6 +1,8 @@
 package com.harro.goaltracker.entities;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -22,4 +24,8 @@ public class Schedule {
 
     @Column(name = "date")
     LocalDate date;
+
+    @OneToMany(mappedBy = "schedule", cascade = CascadeType.REMOVE)
+    @Builder.Default
+    private List<Event> events = new ArrayList<>();
 }

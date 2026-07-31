@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -117,5 +118,16 @@ public class ScheduleController {
 
         var uri = uriBuilder.path("/schedules/{id}").buildAndExpand(scheduleDto.getId()).toUri();
         return ResponseEntity.created(uri).body(scheduleDto);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSchedule(@PathVariable(name="id") Long id){
+        var schedule = scheduleRepository.findById(id).orElse(null);
+        if(schedule==null){
+            return ResponseEntity.notFound().build();
+        }
+
+        scheduleRepository.delete(schedule);
+        return ResponseEntity.noContent().build();
     }
 }

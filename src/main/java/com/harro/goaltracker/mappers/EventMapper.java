@@ -20,4 +20,7 @@ public interface EventMapper {
     @Mapping(source = "schedule", target = "schedule")
     @Mapping(target = "id", ignore = true)
     Event toEvent(EventTemplate template, Schedule schedule);
+
+    @Mapping(target="goal",ignore = true)
+    Event stripGoal(Event event);
 }

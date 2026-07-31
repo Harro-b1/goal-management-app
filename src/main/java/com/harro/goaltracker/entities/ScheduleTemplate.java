@@ -1,5 +1,8 @@
 package com.harro.goaltracker.entities;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,4 +23,8 @@ public class ScheduleTemplate {
 
     @Column(name = "name")
     String name;
+
+    @OneToMany(mappedBy = "scheduleTemplate", cascade = CascadeType.REMOVE)
+    @Builder.Default
+    private List<EventTemplate> eventTemplates = new ArrayList<>();
 }

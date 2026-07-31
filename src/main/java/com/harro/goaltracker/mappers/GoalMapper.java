@@ -12,4 +12,6 @@ public interface GoalMapper {
     GoalDto toDto(Goal goal);
     @Mapping(target = "category", ignore = true)
     Goal toEntity(GoalDto dto);
+    @Mapping(target = "category", ignore = true)
+    Goal stripCategory(Goal goal);
 }

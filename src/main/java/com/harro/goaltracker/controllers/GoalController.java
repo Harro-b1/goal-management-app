@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,9 +16,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.harro.goaltracker.mappers.EventMapper;
+import com.harro.goaltracker.mappers.EventTemplateMapper;
 import com.harro.goaltracker.mappers.GoalMapper;
 import com.harro.goaltracker.repositories.GoalRepository;
 import com.harro.goaltracker.repositories.CategoryRepository;
+import com.harro.goaltracker.repositories.EventRepository;
+import com.harro.goaltracker.repositories.EventTemplateRepository;
 
 import dev.langchain4j.model.chat.ChatModel;
 
@@ -35,6 +40,11 @@ public class GoalController {
     private final CategoryRepository categoryRepository;
     private final ChatModel chatModel;
     private final GoalMapper goalMapper;
+    private final EventRepository eventRepository;
+    private final EventMapper eventMapper;
+    private final EventTemplateRepository eventTemplateRepository;
+    private final EventTemplateMapper eventTemplateMapper;
+    
 
     @GetMapping 
     public List<GoalDto> getAllGoals(){
@@ -118,5 +128,24 @@ public class GoalController {
         goalRepository.save(goal);
 
         return ResponseEntity.ok(goalMapper.toDto(goal));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteGoal(@PathVariable(name="id") Long id){
+        var goal = goalRepository.findById(id).orElse(null);
+        if(goal == null){
+            return ResponseEntity.notFound().build();
+        }
+
+        var eventsWithGoal = eventRepository.findByGoal(goal);
+        var strippedEvents = eventsWithGoal.stream().map(eventMapper::stripGoal).toList();
+        eventRepository.saveAll(strippedEvents);
+
+        var eventTemplatesWithGoal = eventTemplateRepository.findByGoal(goal);
+        var strippedEventTemplates = eventTemplatesWithGoal.stream().map(eventTemplateMapper::stripGoal).toList();
+        eventTemplateRepository.saveAll(strippedEventTemplates);
+
+        goalRepository.delete(goal);
+        return ResponseEntity.noContent().build();
     }
 }

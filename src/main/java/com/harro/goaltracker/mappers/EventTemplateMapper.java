@@ -14,4 +14,7 @@ public interface EventTemplateMapper {
     @Mapping(target = "goal", ignore = true)
     @Mapping(target = "scheduleTemplate", ignore = true)
     EventTemplate toEntity(EventTemplateDto dto);
+
+    @Mapping(target = "goal", ignore = true)
+    EventTemplate stripGoal(EventTemplate eventTemplate);
 }

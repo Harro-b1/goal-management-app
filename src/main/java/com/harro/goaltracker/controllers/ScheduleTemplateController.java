@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.harro.goaltracker.dtos.EventDto;
 import com.harro.goaltracker.dtos.EventTemplateDto;
 import com.harro.goaltracker.dtos.ScheduleTemplateDto;
 import com.harro.goaltracker.entities.EventTemplate;
@@ -76,5 +76,16 @@ public class ScheduleTemplateController {
 
         var uri = uriBuilder.path("/schedule-templates/{id}").buildAndExpand(scheduleTemplateDto.getId()).toUri();
         return ResponseEntity.created(uri).body(scheduleTemplateDto);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteScheduleTemplate(@PathVariable(name="id") Long id){
+        var scheduleTemplate = scheduleTemplateRepository.findById(id).orElse(null);
+        if(scheduleTemplate==null){
+            return ResponseEntity.notFound().build();
+        }
+
+        scheduleTemplateRepository.delete(scheduleTemplate);
+        return ResponseEntity.noContent().build();
     }
 }

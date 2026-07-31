@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -82,5 +83,16 @@ public class EventController {
 
         var uri = uriBuilder.path("/events/{id}").buildAndExpand(eventDto.getId()).toUri();
         return ResponseEntity.created(uri).body(eventDto);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEvent(@PathVariable (name="id") Long id){
+        var event = eventRepository.findById(id).orElse(null);
+        if(event == null){
+            return ResponseEntity.notFound().build();
+        }
+
+        eventRepository.delete(event);
+        return ResponseEntity.noContent().build();
     }
 }
