@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -124,5 +125,26 @@ class EventControllerTest extends AbstractIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().is(422));
+    }
+
+    // Regression test: updateEvent used to mutate the managed entity via the mapper
+    // before validating schedule/goal, so an invalid schedule still leaked the name
+    // change to the database despite the request being rejected with 422.
+    @Test
+    void updateEvent_withInvalidSchedule_doesNotPersistPartialUpdate() throws Exception {
+        EventDto request = new EventDto();
+        request.setSchedule(9999L);
+        request.setName("Mutated Name Should Not Persist");
+        request.setStartTime(LocalTime.of(23, 0));
+        request.setEndTime(LocalTime.of(23, 30));
+
+        mockMvc.perform(put("/events/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().is(422));
+
+        mockMvc.perform(get("/events/1"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Morning run"));
     }
 }

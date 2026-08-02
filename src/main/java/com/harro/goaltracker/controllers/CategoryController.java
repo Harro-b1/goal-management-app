@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -64,6 +65,22 @@ public class CategoryController {
 
         var uri = uriBuilder.path("/categories/{id}").buildAndExpand(categoryDto.getId()).toUri();
         return ResponseEntity.created(uri).body(categoryDto);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<CategoryDto> updateCategory(
+        @PathVariable (name="id") Long id,
+        @RequestBody CategoryDto request
+    ){
+        var category = categoryRepository.findById(id).orElse(null);
+        if(category == null){
+            return ResponseEntity.notFound().build();
+        }
+
+        categoryMapper.updateCategory(request, category);
+        categoryRepository.save(category);
+        
+        return ResponseEntity.ok(categoryMapper.toDto(category));
     }
 
     @DeleteMapping("/{id}")

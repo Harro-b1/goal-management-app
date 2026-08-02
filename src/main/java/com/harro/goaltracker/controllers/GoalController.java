@@ -2,7 +2,6 @@ package com.harro.goaltracker.controllers;
 
 import java.util.List;
 
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,6 +27,7 @@ import dev.langchain4j.model.chat.ChatModel;
 
 import com.harro.goaltracker.dtos.GoalDto;
 import com.harro.goaltracker.entities.Goal;
+import com.harro.goaltracker.exceptions.InvalidReferenceException;
 
 import lombok.AllArgsConstructor;
 
@@ -63,47 +63,17 @@ public class GoalController {
         return ResponseEntity.ok(goalMapper.toDto(goal));
     }
 
-    @GetMapping("/search")
-    public List<GoalDto> searchGoals(@RequestParam(name = "query") String query){
-        List<Goal> goals = goalRepository.searchGoalsByString(query);
-
-        return goals.stream().map(goalMapper::toDto).toList();
-    }
-
-    @GetMapping("/chat")
-    public ResponseEntity<String> testChat(@RequestParam(name = "query") String query){
-        String response = chatModel.chat(query);
-
-        return ResponseEntity.ok(response);
-    }
-
-    @PutMapping("/{id}/complete")
-    public ResponseEntity<GoalDto> completeJob(
-        @PathVariable(name = "id") Long id
-    ){
-        var goal = goalRepository.findById(id).orElse(null);
-        
-        if(goal == null){
-            return ResponseEntity.notFound().build();
-        }
-        goal.setCompleted(true);
-        goalRepository.save(goal);
-
-        return ResponseEntity.ok(goalMapper.toDto(goal));
-    }
-
     @PostMapping
     public ResponseEntity<GoalDto> createGoal(
         @RequestBody GoalDto request,
         UriComponentsBuilder uriBuilder
     ){
-        request.setId(null);
         var goal = goalMapper.toEntity(request);
 
         if(request.getCategory() != null){
             var category = categoryRepository.findById(request.getCategory()).orElse(null);
             if(category == null){
-                return new ResponseEntity<>(HttpStatusCode.valueOf(422));
+                throw new InvalidReferenceException("category");
             }
             goal.setCategory(category);
         }
@@ -115,18 +85,28 @@ public class GoalController {
         return ResponseEntity.created(uri).body(goalDto);
     }
 
-    @PutMapping("/{id}/uncomplete")
-    public ResponseEntity<GoalDto> uncompleteJob(
-        @PathVariable(name = "id") Long id
+    @PutMapping("/{id}")
+    public ResponseEntity<GoalDto> updateGoal(
+        @PathVariable(name="id") Long id,
+        @RequestBody GoalDto request
     ){
         var goal = goalRepository.findById(id).orElse(null);
-        
         if(goal == null){
             return ResponseEntity.notFound().build();
         }
-        goal.setCompleted(false);
-        goalRepository.save(goal);
+        
+        if(request.getCategory() != null){
+            var category = categoryRepository.findById(request.getCategory()).orElse(null);
+            if(category == null){
+                throw new InvalidReferenceException("category");
+            }
+            goal.setCategory(category);
+        }else{
+            goal.setCategory(null);
+        }
 
+        goalMapper.updateGoal(request, goal);
+        goalRepository.save(goal);
         return ResponseEntity.ok(goalMapper.toDto(goal));
     }
 
@@ -147,5 +127,49 @@ public class GoalController {
 
         goalRepository.delete(goal);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/complete")
+    public ResponseEntity<GoalDto> completeJob(
+        @PathVariable(name = "id") Long id
+    ){
+        var goal = goalRepository.findById(id).orElse(null);
+        
+        if(goal == null){
+            return ResponseEntity.notFound().build();
+        }
+        goal.setCompleted(true);
+        goalRepository.save(goal);
+
+        return ResponseEntity.ok(goalMapper.toDto(goal));
+    }
+
+    @PutMapping("/{id}/uncomplete")
+    public ResponseEntity<GoalDto> uncompleteJob(
+        @PathVariable(name = "id") Long id
+    ){
+        var goal = goalRepository.findById(id).orElse(null);
+        
+        if(goal == null){
+            return ResponseEntity.notFound().build();
+        }
+        goal.setCompleted(false);
+        goalRepository.save(goal);
+
+        return ResponseEntity.ok(goalMapper.toDto(goal));
+    }
+
+    @GetMapping("/chat")
+    public ResponseEntity<String> testChat(@RequestParam(name = "query") String query){
+        String response = chatModel.chat(query);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/search")
+    public List<GoalDto> searchGoals(@RequestParam(name = "query") String query){
+        List<Goal> goals = goalRepository.searchGoalsByString(query);
+
+        return goals.stream().map(goalMapper::toDto).toList();
     }
 }

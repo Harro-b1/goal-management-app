@@ -2,13 +2,13 @@ package com.harro.goaltracker.controllers;
 
 import java.util.List;
 
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,6 +16,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.harro.goaltracker.dtos.EventDto;
 import com.harro.goaltracker.entities.Event;
+import com.harro.goaltracker.exceptions.InvalidReferenceException;
 import com.harro.goaltracker.mappers.EventMapper;
 import com.harro.goaltracker.repositories.EventRepository;
 import com.harro.goaltracker.repositories.GoalRepository;
@@ -65,14 +66,14 @@ public class EventController {
 
         var schedule = scheduleRepository.findById(request.getSchedule()).orElse(null);
         if(schedule == null){
-            return new ResponseEntity<>(HttpStatusCode.valueOf(422));
+            throw new InvalidReferenceException("schedule");
         }
         event.setSchedule(schedule);
 
         if(request.getGoal() != null){
             var goal = goalRepository.findById(request.getGoal()).orElse(null);
             if(goal == null){
-                return new ResponseEntity<>(HttpStatusCode.valueOf(422));
+                throw new InvalidReferenceException("goal");
             }
             event.setGoal(goal);
         }
@@ -83,6 +84,42 @@ public class EventController {
 
         var uri = uriBuilder.path("/events/{id}").buildAndExpand(eventDto.getId()).toUri();
         return ResponseEntity.created(uri).body(eventDto);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<EventDto> updateEvent(
+        @PathVariable(name="id") Long id,
+        @RequestBody EventDto request
+    ){
+        var event = eventRepository.findById(id).orElse(null);
+        if(event == null){
+            return ResponseEntity.notFound().build();
+        }
+
+        if(request.getSchedule() == null){
+            return ResponseEntity.badRequest().build();
+        }
+
+        var schedule = scheduleRepository.findById(request.getSchedule()).orElse(null);
+        if(schedule == null){
+            throw new InvalidReferenceException("schedule");
+        }
+
+        event.setSchedule(schedule);
+
+        if(request.getGoal() != null){
+            var goal = goalRepository.findById(request.getGoal()).orElse(null);
+            if(goal == null){
+                throw new InvalidReferenceException("goal");
+            }
+            event.setGoal(goal);
+        }else{
+            event.setGoal(null);
+        }
+
+        eventMapper.updateEvent(request, event);
+        eventRepository.save(event);
+        return ResponseEntity.ok(eventMapper.toDto(event));
     }
 
     @DeleteMapping("/{id}")

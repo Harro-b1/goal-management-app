@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -76,6 +77,21 @@ public class ScheduleTemplateController {
 
         var uri = uriBuilder.path("/schedule-templates/{id}").buildAndExpand(scheduleTemplateDto.getId()).toUri();
         return ResponseEntity.created(uri).body(scheduleTemplateDto);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ScheduleTemplateDto> updateScheduleTemplate(
+        @PathVariable (name="id") Long id,
+        @RequestBody ScheduleTemplateDto request
+    ){
+        var scheduleTemplate = scheduleTemplateRepository.findById(id).orElse(null);
+        if(scheduleTemplate==null){
+            return ResponseEntity.notFound().build();
+        }
+
+        scheduleTemplateMapper.updateScheduleTemplate(request, scheduleTemplate);
+        scheduleTemplateRepository.save(scheduleTemplate);
+        return ResponseEntity.ok(scheduleTemplateMapper.toDto(scheduleTemplate));
     }
 
     @DeleteMapping("/{id}")

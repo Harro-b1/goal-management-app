@@ -2,6 +2,7 @@ package com.harro.goaltracker.mappers;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 import com.harro.goaltracker.dtos.EventDto;
 import com.harro.goaltracker.entities.Event;
@@ -23,4 +24,9 @@ public interface EventMapper {
 
     @Mapping(target="goal",ignore = true)
     Event stripGoal(Event event);
+
+    @Mapping(target="goal",ignore=true)
+    @Mapping(target="id",ignore=true)
+    @Mapping(target="schedule",ignore=true)
+    void updateEvent(EventDto request, @MappingTarget Event event);
 }

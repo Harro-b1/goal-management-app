@@ -98,6 +98,26 @@ class GoalControllerTest extends AbstractIntegrationTest {
             .andExpect(status().is(422));
     }
 
+    // Regression test: updateGoal used to mutate the managed entity via the mapper
+    // before validating the category, so an invalid category still leaked the name
+    // change to the database despite the request being rejected with 422.
+    @Test
+    void updateGoal_withInvalidCategory_doesNotPersistPartialUpdate() throws Exception {
+        GoalDto request = new GoalDto();
+        request.setName("Mutated Name Should Not Persist");
+        request.setCategory(9999L);
+        request.setPriority(PriorityLevel.HIGH);
+
+        mockMvc.perform(put("/goals/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().is(422));
+
+        mockMvc.perform(get("/goals/1"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Run a 5k"));
+    }
+
     @Test
     void completeGoal_marksCompletedTrue() throws Exception {
         mockMvc.perform(put("/goals/2/complete"))

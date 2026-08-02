@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -61,6 +62,47 @@ public class ScheduleController {
         return ResponseEntity.ok(scheduleMapper.toDto(schedule));
     }
 
+    @PostMapping
+    public ResponseEntity<ScheduleDto> createSchedule(
+        @RequestBody ScheduleDto request,
+        UriComponentsBuilder uriBuilder
+    ){
+        var schedule = scheduleMapper.toEntity(request);
+        scheduleRepository.save(schedule);
+
+        var scheduleDto = scheduleMapper.toDto(schedule);
+
+        var uri = uriBuilder.path("/schedules/{id}").buildAndExpand(scheduleDto.getId()).toUri();
+        return ResponseEntity.created(uri).body(scheduleDto);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ScheduleDto> updateSchedule(
+        @PathVariable(name = "id") Long id,
+        @RequestBody ScheduleDto request
+    ){
+        var schedule = scheduleRepository.findById(id).orElse(null);
+        if(schedule == null){
+            return ResponseEntity.notFound().build();
+        }
+
+        scheduleMapper.updateSchedule(request, schedule);
+        scheduleRepository.save(schedule);
+
+        return ResponseEntity.ok(scheduleMapper.toDto(schedule));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSchedule(@PathVariable(name="id") Long id){
+        var schedule = scheduleRepository.findById(id).orElse(null);
+        if(schedule==null){
+            return ResponseEntity.notFound().build();
+        }
+
+        scheduleRepository.delete(schedule);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/{id}/events")
     public List<EventDto> getScheduleContents(@PathVariable Long id){
         var schedule = scheduleRepository.findById(id).orElse(null);
@@ -104,30 +146,5 @@ public class ScheduleController {
 
         var uri = uriBuilder.path("/schedules/{id}").buildAndExpand(scheduleDto.getId()).toUri();
         return ResponseEntity.created(uri).body(scheduleDto);
-    }
-
-    @PostMapping
-    public ResponseEntity<ScheduleDto> createSchedule(
-        @RequestBody ScheduleDto request,
-        UriComponentsBuilder uriBuilder
-    ){
-        var schedule = scheduleMapper.toEntity(request);
-        scheduleRepository.save(schedule);
-
-        var scheduleDto = scheduleMapper.toDto(schedule);
-
-        var uri = uriBuilder.path("/schedules/{id}").buildAndExpand(scheduleDto.getId()).toUri();
-        return ResponseEntity.created(uri).body(scheduleDto);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSchedule(@PathVariable(name="id") Long id){
-        var schedule = scheduleRepository.findById(id).orElse(null);
-        if(schedule==null){
-            return ResponseEntity.notFound().build();
-        }
-
-        scheduleRepository.delete(schedule);
-        return ResponseEntity.noContent().build();
     }
 }
