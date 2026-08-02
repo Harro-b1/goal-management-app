@@ -3,9 +3,11 @@ package com.harro.goaltracker.controllers;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -116,6 +118,97 @@ class GoalControllerTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/goals/1"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.name").value("Run a 5k"));
+    }
+
+    @Test
+    void updateGoal_existingId_updatesAndReturnsOk() throws Exception {
+        GoalDto request = new GoalDto();
+        request.setName("Updated Goal Name");
+        request.setDescription("Updated description");
+        request.setCategory(2L);
+        request.setPriority(PriorityLevel.HIGH);
+
+        mockMvc.perform(put("/goals/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Updated Goal Name"))
+            .andExpect(jsonPath("$.category").value(2));
+    }
+
+    @Test
+    void updateGoal_missingId_returns404() throws Exception {
+        GoalDto request = new GoalDto();
+        request.setName("Doesn't matter");
+        request.setPriority(PriorityLevel.LOW);
+
+        mockMvc.perform(put("/goals/9999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound());
+    }
+
+    // Regression test: PUT sending category:null used to be silently ignored (treated
+    // as "leave unchanged") instead of clearing the relation - see context.md bug #5.
+    @Test
+    void updateGoal_withNullCategory_clearsExistingCategory() throws Exception {
+        GoalDto request = new GoalDto();
+        request.setName("Run a 5k");
+        request.setCategory(null);
+        request.setPriority(PriorityLevel.MEDIUM);
+
+        mockMvc.perform(put("/goals/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.category").value(nullValue()));
+    }
+
+    @Test
+    void deleteGoal_existingId_removesGoalAndReturnsNoContent() throws Exception {
+        mockMvc.perform(delete("/goals/2"))
+            .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/goals/2"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteGoal_missingId_returns404() throws Exception {
+        mockMvc.perform(delete("/goals/9999"))
+            .andExpect(status().isNotFound());
+    }
+
+    // Regression test: deleting a Goal strips the reference from dependent Events and
+    // EventTemplates instead of cascading delete - see context.md domain model notes.
+    // Goal 1 is referenced by event 1 and event template 1 in data.sql.
+    @Test
+    void deleteGoal_stripsGoalFromEventsAndEventTemplates() throws Exception {
+        mockMvc.perform(delete("/goals/1"))
+            .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/events/1"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.goal").value(nullValue()));
+
+        mockMvc.perform(get("/event-templates/1"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.goal").value(nullValue()));
+    }
+
+    // Exercises NullAssignmentException: goals.name has no application-level guard,
+    // so a null name reaches the DB's NOT NULL constraint.
+    @Test
+    void createGoal_withNullName_returns400WithMessage() throws Exception {
+        GoalDto request = new GoalDto();
+        request.setName(null);
+        request.setPriority(PriorityLevel.MEDIUM);
+
+        mockMvc.perform(post("/goals")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().string("name cannot be null"));
     }
 
     @Test

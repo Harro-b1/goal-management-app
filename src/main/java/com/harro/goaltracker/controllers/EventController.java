@@ -17,6 +17,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.harro.goaltracker.dtos.EventDto;
 import com.harro.goaltracker.entities.Event;
 import com.harro.goaltracker.exceptions.InvalidReferenceException;
+import com.harro.goaltracker.exceptions.NullAssignmentException;
 import com.harro.goaltracker.mappers.EventMapper;
 import com.harro.goaltracker.repositories.EventRepository;
 import com.harro.goaltracker.repositories.GoalRepository;
@@ -61,7 +62,7 @@ public class EventController {
         var event = eventMapper.toEntity(request);
 
         if(request.getSchedule() == null){
-            return ResponseEntity.badRequest().build();
+            throw new NullAssignmentException("schedule");
         }
 
         var schedule = scheduleRepository.findById(request.getSchedule()).orElse(null);
@@ -97,7 +98,7 @@ public class EventController {
         }
 
         if(request.getSchedule() == null){
-            return ResponseEntity.badRequest().build();
+            throw new NullAssignmentException("schedule");
         }
 
         var schedule = scheduleRepository.findById(request.getSchedule()).orElse(null);

@@ -78,7 +78,7 @@ public class CategoryController {
         }
 
         categoryMapper.updateCategory(request, category);
-        categoryRepository.save(category);
+        categoryRepository.saveAndFlush(category);
         
         return ResponseEntity.ok(categoryMapper.toDto(category));
     }

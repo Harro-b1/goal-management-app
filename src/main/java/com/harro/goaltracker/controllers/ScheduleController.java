@@ -87,7 +87,7 @@ public class ScheduleController {
         }
 
         scheduleMapper.updateSchedule(request, schedule);
-        scheduleRepository.save(schedule);
+        scheduleRepository.saveAndFlush(schedule);
 
         return ResponseEntity.ok(scheduleMapper.toDto(schedule));
     }

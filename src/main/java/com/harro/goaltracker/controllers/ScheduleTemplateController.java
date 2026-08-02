@@ -90,7 +90,7 @@ public class ScheduleTemplateController {
         }
 
         scheduleTemplateMapper.updateScheduleTemplate(request, scheduleTemplate);
-        scheduleTemplateRepository.save(scheduleTemplate);
+        scheduleTemplateRepository.saveAndFlush(scheduleTemplate);
         return ResponseEntity.ok(scheduleTemplateMapper.toDto(scheduleTemplate));
     }
 

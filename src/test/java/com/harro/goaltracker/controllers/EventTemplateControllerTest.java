@@ -3,9 +3,11 @@ package com.harro.goaltracker.controllers;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -92,7 +94,8 @@ class EventTemplateControllerTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/event-templates")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isBadRequest())
+            .andExpect(content().string("scheduleTemplate cannot be null"));
     }
 
     @Test
@@ -143,5 +146,121 @@ class EventTemplateControllerTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/event-templates/1"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.name").value("Morning run"));
+    }
+
+    @Test
+    void updateEventTemplate_withInvalidGoal_returns422() throws Exception {
+        EventTemplateDto request = new EventTemplateDto();
+        request.setScheduleTemplate(1L);
+        request.setGoal(9999L);
+        request.setName("Mutated Name Should Not Persist");
+        request.setStartTime(LocalTime.of(23, 0));
+        request.setEndTime(LocalTime.of(23, 30));
+
+        mockMvc.perform(put("/event-templates/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().is(422))
+            .andExpect(content().string("Invalid goal reference id"));
+
+        mockMvc.perform(get("/event-templates/1"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Morning run"));
+    }
+
+    @Test
+    void updateEventTemplate_existingId_updatesAndReturnsOk() throws Exception {
+        EventTemplateDto request = new EventTemplateDto();
+        request.setScheduleTemplate(2L);
+        request.setGoal(3L);
+        request.setName("Updated template name");
+        request.setStartTime(LocalTime.of(8, 0));
+        request.setEndTime(LocalTime.of(8, 45));
+
+        mockMvc.perform(put("/event-templates/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Updated template name"))
+            .andExpect(jsonPath("$.scheduleTemplate").value(2))
+            .andExpect(jsonPath("$.goal").value(3));
+    }
+
+    @Test
+    void updateEventTemplate_missingId_returns404() throws Exception {
+        EventTemplateDto request = new EventTemplateDto();
+        request.setScheduleTemplate(1L);
+        request.setName("Doesn't matter");
+        request.setStartTime(LocalTime.of(8, 0));
+        request.setEndTime(LocalTime.of(8, 30));
+
+        mockMvc.perform(put("/event-templates/9999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateEventTemplate_withoutScheduleTemplate_returns400WithMessage() throws Exception {
+        EventTemplateDto request = new EventTemplateDto();
+        request.setName("Doesn't matter");
+        request.setStartTime(LocalTime.of(8, 0));
+        request.setEndTime(LocalTime.of(8, 30));
+
+        mockMvc.perform(put("/event-templates/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().string("scheduleTemplate cannot be null"));
+    }
+
+    // Regression test: PUT sending goal:null used to be silently ignored (treated as
+    // "leave unchanged") instead of clearing the relation - see context.md bug #5.
+    @Test
+    void updateEventTemplate_withNullGoal_clearsExistingGoal() throws Exception {
+        EventTemplateDto request = new EventTemplateDto();
+        request.setScheduleTemplate(1L);
+        request.setGoal(null);
+        request.setName("Morning run");
+        request.setStartTime(LocalTime.of(7, 0));
+        request.setEndTime(LocalTime.of(7, 30));
+
+        mockMvc.perform(put("/event-templates/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.goal").value(nullValue()));
+    }
+
+    @Test
+    void deleteEventTemplate_existingId_removesEventTemplateAndReturnsNoContent() throws Exception {
+        mockMvc.perform(delete("/event-templates/1"))
+            .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/event-templates/1"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteEventTemplate_missingId_returns404() throws Exception {
+        mockMvc.perform(delete("/event-templates/9999"))
+            .andExpect(status().isNotFound());
+    }
+
+    // Exercises NullAssignmentException: event_templates.name has no application-level
+    // guard, so a null name reaches the DB's NOT NULL constraint.
+    @Test
+    void createEventTemplate_withNullName_returns400WithMessage() throws Exception {
+        EventTemplateDto request = new EventTemplateDto();
+        request.setScheduleTemplate(1L);
+        request.setName(null);
+        request.setStartTime(LocalTime.of(9, 0));
+        request.setEndTime(LocalTime.of(9, 30));
+
+        mockMvc.perform(post("/event-templates")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().string("name cannot be null"));
     }
 }
