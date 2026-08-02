@@ -1,8 +1,10 @@
 package com.harro.goaltracker.mappers;
 
+import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
 import com.harro.goaltracker.dtos.ScheduleDto;
 import com.harro.goaltracker.entities.Schedule;
@@ -18,4 +20,9 @@ public interface ScheduleMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "events", ignore = true)
     void updateSchedule(ScheduleDto request, @MappingTarget Schedule schedule);
+
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "events", ignore = true)
+    void patchSchedule(ScheduleDto request, @MappingTarget Schedule schedule);
 }

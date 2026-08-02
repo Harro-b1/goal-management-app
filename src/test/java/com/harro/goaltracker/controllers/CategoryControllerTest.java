@@ -3,6 +3,7 @@ package com.harro.goaltracker.controllers;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -120,6 +121,55 @@ class CategoryControllerTest extends AbstractIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
             .andExpect(content().string("name cannot be null"));
+    }
+
+    @Test
+    void patchCategory_updatesNameOnly_returnsOk() throws Exception {
+        CategoryDto request = new CategoryDto();
+        request.setName("Wellbeing");
+
+        mockMvc.perform(patch("/categories/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Wellbeing"));
+    }
+
+    @Test
+    void patchCategory_missingId_returns404() throws Exception {
+        CategoryDto request = new CategoryDto();
+        request.setName("Doesn't matter");
+
+        mockMvc.perform(patch("/categories/9999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound());
+    }
+
+    // Exercises DuplicateDataException via PATCH's saveAndFlush(), same as PUT.
+    @Test
+    void patchCategory_duplicateName_returns409WithMessage() throws Exception {
+        CategoryDto request = new CategoryDto();
+        request.setName("Career");
+
+        mockMvc.perform(patch("/categories/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isConflict())
+            .andExpect(content().string("Duplicate value for name"));
+    }
+
+    // Regression test: PATCH is a partial update - an empty body must leave the
+    // existing name untouched, unlike PUT which would reject/null it out.
+    @Test
+    void patchCategory_withEmptyBody_leavesNameUnchanged() throws Exception {
+        CategoryDto request = new CategoryDto();
+
+        mockMvc.perform(patch("/categories/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Health"));
     }
 
     @Test

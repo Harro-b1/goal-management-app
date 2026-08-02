@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -121,6 +122,55 @@ class ScheduleTemplateControllerTest extends AbstractIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
             .andExpect(content().string("name cannot be null"));
+    }
+
+    @Test
+    void patchScheduleTemplate_updatesNameOnly_returnsOk() throws Exception {
+        ScheduleTemplateDto request = new ScheduleTemplateDto();
+        request.setName("Rest Day Routine");
+
+        mockMvc.perform(patch("/schedule-templates/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Rest Day Routine"));
+    }
+
+    @Test
+    void patchScheduleTemplate_missingId_returns404() throws Exception {
+        ScheduleTemplateDto request = new ScheduleTemplateDto();
+        request.setName("Doesn't matter");
+
+        mockMvc.perform(patch("/schedule-templates/9999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound());
+    }
+
+    // Exercises DuplicateDataException via PATCH's saveAndFlush(), same as PUT.
+    @Test
+    void patchScheduleTemplate_duplicateName_returns409WithMessage() throws Exception {
+        ScheduleTemplateDto request = new ScheduleTemplateDto();
+        request.setName("Weekend Routine");
+
+        mockMvc.perform(patch("/schedule-templates/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isConflict())
+            .andExpect(content().string("Duplicate value for name"));
+    }
+
+    // Regression test: PATCH is a partial update - an empty body must leave the
+    // existing name untouched, unlike PUT which would reject/null it out.
+    @Test
+    void patchScheduleTemplate_withEmptyBody_leavesNameUnchanged() throws Exception {
+        ScheduleTemplateDto request = new ScheduleTemplateDto();
+
+        mockMvc.perform(patch("/schedule-templates/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Weekday Routine"));
     }
 
     @Test

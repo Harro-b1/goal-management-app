@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -119,6 +120,37 @@ public class EventController {
         }
 
         eventMapper.updateEvent(request, event);
+        eventRepository.save(event);
+        return ResponseEntity.ok(eventMapper.toDto(event));
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<EventDto> patchEvent(
+        @PathVariable(name="id") Long id,
+        @RequestBody EventDto request
+    ){
+        var event = eventRepository.findById(id).orElse(null);
+        if(event == null){
+            return ResponseEntity.notFound().build();
+        }
+
+        if(request.getSchedule() != null){
+            var schedule = scheduleRepository.findById(request.getSchedule()).orElse(null);
+            if(schedule == null){
+                throw new InvalidReferenceException("schedule");
+            }
+            event.setSchedule(schedule);
+        }
+
+        if(request.getGoal() != null){
+            var goal = goalRepository.findById(request.getGoal()).orElse(null);
+            if(goal == null){
+                throw new InvalidReferenceException("goal");
+            }
+            event.setGoal(goal);
+        }
+
+        eventMapper.patchEvent(request, event);
         eventRepository.save(event);
         return ResponseEntity.ok(eventMapper.toDto(event));
     }

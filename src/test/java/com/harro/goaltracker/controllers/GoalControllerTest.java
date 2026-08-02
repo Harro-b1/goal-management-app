@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -162,6 +163,88 @@ class GoalControllerTest extends AbstractIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.category").value(nullValue()));
+    }
+
+    @Test
+    void patchGoal_updatesNameOnly_returnsOk() throws Exception {
+        GoalDto request = new GoalDto();
+        request.setName("Renamed via patch");
+
+        mockMvc.perform(patch("/goals/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Renamed via patch"));
+    }
+
+    @Test
+    void patchGoal_missingId_returns404() throws Exception {
+        GoalDto request = new GoalDto();
+        request.setName("Doesn't matter");
+
+        mockMvc.perform(patch("/goals/9999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void patchGoal_updatesCategory_returnsOk() throws Exception {
+        GoalDto request = new GoalDto();
+        request.setCategory(2L);
+
+        mockMvc.perform(patch("/goals/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.category").value(2));
+    }
+
+    @Test
+    void patchGoal_withInvalidCategory_returns422() throws Exception {
+        GoalDto request = new GoalDto();
+        request.setCategory(9999L);
+
+        mockMvc.perform(patch("/goals/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().is(422))
+            .andExpect(content().string("Invalid category reference id"));
+    }
+
+    // PATCH's partial-update contract: omitting "category" must leave the existing
+    // relation untouched, unlike PUT where an omitted/null category clears it.
+    @Test
+    void patchGoal_omittingCategory_leavesCategoryUnchanged() throws Exception {
+        GoalDto request = new GoalDto();
+        request.setName("Renamed, category untouched");
+
+        mockMvc.perform(patch("/goals/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.category").value(1));
+    }
+
+    // Regression test: GoalDto.completed is a primitive boolean, so an omitted field
+    // deserializes to false (not null) and NullValuePropertyMappingStrategy.IGNORE
+    // can't skip it - patchGoal must explicitly ignore "completed" in the mapper or
+    // every PATCH silently un-completes the goal. See GoalMapper#patchGoal.
+    @Test
+    void patchGoal_afterComplete_doesNotResetCompleted() throws Exception {
+        mockMvc.perform(put("/goals/2/complete"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.completed").value(true));
+
+        GoalDto request = new GoalDto();
+        request.setName("Renamed after completing");
+
+        mockMvc.perform(patch("/goals/2")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Renamed after completing"))
+            .andExpect(jsonPath("$.completed").value(true));
     }
 
     @Test

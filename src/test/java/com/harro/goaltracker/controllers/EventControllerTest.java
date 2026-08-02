@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -233,6 +234,93 @@ class EventControllerTest extends AbstractIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.goal").value(nullValue()));
+    }
+
+    @Test
+    void patchEvent_updatesNameOnly_leavesRelationsUnchanged() throws Exception {
+        EventDto request = new EventDto();
+        request.setName("Renamed via patch");
+
+        mockMvc.perform(patch("/events/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Renamed via patch"))
+            .andExpect(jsonPath("$.schedule").value(1))
+            .andExpect(jsonPath("$.goal").value(1));
+    }
+
+    @Test
+    void patchEvent_missingId_returns404() throws Exception {
+        EventDto request = new EventDto();
+        request.setName("Doesn't matter");
+
+        mockMvc.perform(patch("/events/9999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void patchEvent_updatesSchedule_returnsOk() throws Exception {
+        EventDto request = new EventDto();
+        request.setSchedule(2L);
+
+        mockMvc.perform(patch("/events/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.schedule").value(2));
+    }
+
+    @Test
+    void patchEvent_withInvalidSchedule_returns422() throws Exception {
+        EventDto request = new EventDto();
+        request.setSchedule(9999L);
+
+        mockMvc.perform(patch("/events/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().is(422))
+            .andExpect(content().string("Invalid schedule reference id"));
+    }
+
+    @Test
+    void patchEvent_updatesGoal_returnsOk() throws Exception {
+        EventDto request = new EventDto();
+        request.setGoal(3L);
+
+        mockMvc.perform(patch("/events/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.goal").value(3));
+    }
+
+    @Test
+    void patchEvent_withInvalidGoal_returns422() throws Exception {
+        EventDto request = new EventDto();
+        request.setGoal(9999L);
+
+        mockMvc.perform(patch("/events/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().is(422))
+            .andExpect(content().string("Invalid goal reference id"));
+    }
+
+    // PATCH's partial-update contract: omitting "goal" must leave the existing
+    // relation untouched, unlike PUT where an omitted/null goal clears it.
+    @Test
+    void patchEvent_omittingGoal_leavesGoalUnchanged() throws Exception {
+        EventDto request = new EventDto();
+        request.setName("Renamed, goal untouched");
+
+        mockMvc.perform(patch("/events/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.goal").value(1));
     }
 
     @Test

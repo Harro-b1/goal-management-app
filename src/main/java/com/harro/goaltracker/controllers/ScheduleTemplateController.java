@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -90,6 +91,21 @@ public class ScheduleTemplateController {
         }
 
         scheduleTemplateMapper.updateScheduleTemplate(request, scheduleTemplate);
+        scheduleTemplateRepository.saveAndFlush(scheduleTemplate);
+        return ResponseEntity.ok(scheduleTemplateMapper.toDto(scheduleTemplate));
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<ScheduleTemplateDto> patchScheduleTemplate(
+        @PathVariable (name="id") Long id,
+        @RequestBody ScheduleTemplateDto request
+    ){
+        var scheduleTemplate = scheduleTemplateRepository.findById(id).orElse(null);
+        if(scheduleTemplate==null){
+            return ResponseEntity.notFound().build();
+        }
+
+        scheduleTemplateMapper.patchScheduleTemplate(request, scheduleTemplate);
         scheduleTemplateRepository.saveAndFlush(scheduleTemplate);
         return ResponseEntity.ok(scheduleTemplateMapper.toDto(scheduleTemplate));
     }

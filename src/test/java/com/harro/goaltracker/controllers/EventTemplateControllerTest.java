@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -230,6 +231,93 @@ class EventTemplateControllerTest extends AbstractIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.goal").value(nullValue()));
+    }
+
+    @Test
+    void patchEventTemplate_updatesNameOnly_leavesRelationsUnchanged() throws Exception {
+        EventTemplateDto request = new EventTemplateDto();
+        request.setName("Renamed via patch");
+
+        mockMvc.perform(patch("/event-templates/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Renamed via patch"))
+            .andExpect(jsonPath("$.scheduleTemplate").value(1))
+            .andExpect(jsonPath("$.goal").value(1));
+    }
+
+    @Test
+    void patchEventTemplate_missingId_returns404() throws Exception {
+        EventTemplateDto request = new EventTemplateDto();
+        request.setName("Doesn't matter");
+
+        mockMvc.perform(patch("/event-templates/9999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void patchEventTemplate_updatesScheduleTemplate_returnsOk() throws Exception {
+        EventTemplateDto request = new EventTemplateDto();
+        request.setScheduleTemplate(2L);
+
+        mockMvc.perform(patch("/event-templates/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.scheduleTemplate").value(2));
+    }
+
+    @Test
+    void patchEventTemplate_withInvalidScheduleTemplate_returns422() throws Exception {
+        EventTemplateDto request = new EventTemplateDto();
+        request.setScheduleTemplate(9999L);
+
+        mockMvc.perform(patch("/event-templates/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().is(422))
+            .andExpect(content().string("Invalid scheduleTemplate reference id"));
+    }
+
+    @Test
+    void patchEventTemplate_updatesGoal_returnsOk() throws Exception {
+        EventTemplateDto request = new EventTemplateDto();
+        request.setGoal(3L);
+
+        mockMvc.perform(patch("/event-templates/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.goal").value(3));
+    }
+
+    @Test
+    void patchEventTemplate_withInvalidGoal_returns422() throws Exception {
+        EventTemplateDto request = new EventTemplateDto();
+        request.setGoal(9999L);
+
+        mockMvc.perform(patch("/event-templates/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().is(422))
+            .andExpect(content().string("Invalid goal reference id"));
+    }
+
+    // PATCH's partial-update contract: omitting "goal" must leave the existing
+    // relation untouched, unlike PUT where an omitted/null goal clears it.
+    @Test
+    void patchEventTemplate_omittingGoal_leavesGoalUnchanged() throws Exception {
+        EventTemplateDto request = new EventTemplateDto();
+        request.setName("Renamed, goal untouched");
+
+        mockMvc.perform(patch("/event-templates/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.goal").value(1));
     }
 
     @Test

@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -87,6 +88,22 @@ public class ScheduleController {
         }
 
         scheduleMapper.updateSchedule(request, schedule);
+        scheduleRepository.saveAndFlush(schedule);
+
+        return ResponseEntity.ok(scheduleMapper.toDto(schedule));
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<ScheduleDto> patchSchedule(
+        @PathVariable(name = "id") Long id,
+        @RequestBody ScheduleDto request
+    ){
+        var schedule = scheduleRepository.findById(id).orElse(null);
+        if(schedule == null){
+            return ResponseEntity.notFound().build();
+        }
+
+        scheduleMapper.patchSchedule(request, schedule);
         scheduleRepository.saveAndFlush(schedule);
 
         return ResponseEntity.ok(scheduleMapper.toDto(schedule));

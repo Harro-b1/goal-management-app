@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -106,6 +107,29 @@ public class GoalController {
         }
 
         goalMapper.updateGoal(request, goal);
+        goalRepository.save(goal);
+        return ResponseEntity.ok(goalMapper.toDto(goal));
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<GoalDto> patchGoal(
+        @PathVariable(name="id") Long id,
+        @RequestBody GoalDto request
+    ){
+        var goal = goalRepository.findById(id).orElse(null);
+        if(goal == null){
+            return ResponseEntity.notFound().build();
+        }
+        
+        if(request.getCategory() != null){
+            var category = categoryRepository.findById(request.getCategory()).orElse(null);
+            if(category == null){
+                throw new InvalidReferenceException("category");
+            }
+            goal.setCategory(category);
+        }
+
+        goalMapper.patchGoal(request, goal);
         goalRepository.save(goal);
         return ResponseEntity.ok(goalMapper.toDto(goal));
     }
