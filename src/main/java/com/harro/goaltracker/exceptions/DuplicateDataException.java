@@ -1,10 +1,9 @@
 package com.harro.goaltracker.exceptions;
 
-public class DuplicateDataException extends RuntimeException {
-    final String field;
+import com.harro.goaltracker.util.StringUtil;
 
+public class DuplicateDataException extends RuntimeException {
     public DuplicateDataException(String field) {
-        super("Duplicate value for " + field);
-        this.field = field;
+        super("Duplicate value for " + StringUtil.snakeToCamel(field));
     }
 }

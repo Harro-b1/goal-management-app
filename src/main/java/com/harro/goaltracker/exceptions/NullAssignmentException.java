@@ -1,10 +1,9 @@
 package com.harro.goaltracker.exceptions;
 
-public class NullAssignmentException extends RuntimeException {
-    final String field;
+import com.harro.goaltracker.util.StringUtil;
 
+public class NullAssignmentException extends RuntimeException {
     public NullAssignmentException(String field) {
-        super(field + " cannot be null");
-        this.field = field;
+        super(StringUtil.snakeToCamel(field) + " cannot be null");
     }
 }

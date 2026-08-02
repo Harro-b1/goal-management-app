@@ -16,7 +16,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.harro.goaltracker.dtos.CategoryDto;
 import com.harro.goaltracker.entities.Category;
-import com.harro.goaltracker.entities.Goal;
 import com.harro.goaltracker.mappers.CategoryMapper;
 import com.harro.goaltracker.mappers.GoalMapper;
 import com.harro.goaltracker.repositories.CategoryRepository;
