@@ -1,6 +1,5 @@
 package com.harro.goaltracker.controllers;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
@@ -18,12 +17,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.harro.goaltracker.dtos.EventTemplateDto;
 import com.harro.goaltracker.dtos.ScheduleTemplateDto;
-import com.harro.goaltracker.entities.EventTemplate;
-import com.harro.goaltracker.entities.ScheduleTemplate;
 import com.harro.goaltracker.mappers.EventTemplateMapper;
 import com.harro.goaltracker.mappers.ScheduleTemplateMapper;
-import com.harro.goaltracker.repositories.EventTemplateRepository;
-import com.harro.goaltracker.repositories.ScheduleTemplateRepository;
+import com.harro.goaltracker.services.ScheduleTemplateService;
 
 import lombok.AllArgsConstructor;
 
@@ -32,38 +28,25 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 @RequestMapping("/schedule-templates")
 public class ScheduleTemplateController {
-    private final ScheduleTemplateRepository scheduleTemplateRepository;
+    private final ScheduleTemplateService scheduleTemplateService;
     private final ScheduleTemplateMapper scheduleTemplateMapper;
-    private final EventTemplateRepository eventTemplateRepository;
     private final EventTemplateMapper eventTemplateMapper;
 
     @GetMapping
     public List<ScheduleTemplateDto> getAllScheduleTemplates(){
-        List<ScheduleTemplate> scheduleTemplates = scheduleTemplateRepository.findAll();
-
-        return scheduleTemplates.stream().map(scheduleTemplateMapper::toDto).toList();
+        return scheduleTemplateService.getAllScheduleTemplates().stream().map(scheduleTemplateMapper::toDto).toList();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ScheduleTemplateDto> getScheduleTemplate(@PathVariable Long id){
-        var scheduleTemplate = scheduleTemplateRepository.findById(id).orElse(null);
-
-        if(scheduleTemplate == null){
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok(scheduleTemplateMapper.toDto(scheduleTemplate));
+        return scheduleTemplateService.getScheduleTemplate(id)
+            .map(scheduleTemplate -> ResponseEntity.ok(scheduleTemplateMapper.toDto(scheduleTemplate)))
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/{id}/events")
     public List<EventTemplateDto> getScheduleTemplateContents(@PathVariable Long id){
-        var scheduleTemplate = scheduleTemplateRepository.findById(id).orElse(null);
-        if(scheduleTemplate == null){
-            return new ArrayList<>();
-        }
-        List<EventTemplate> events = eventTemplateRepository.findByScheduleTemplate(scheduleTemplate);
-
-        return events.stream().map(eventTemplateMapper::toDto).toList();
+        return scheduleTemplateService.getScheduleTemplateContents(id).stream().map(eventTemplateMapper::toDto).toList();
     }
 
     @PostMapping
@@ -71,9 +54,7 @@ public class ScheduleTemplateController {
         @RequestBody ScheduleTemplateDto request,
         UriComponentsBuilder uriBuilder
     ){
-        var scheduleTemplate = scheduleTemplateMapper.toEntity(request);
-        scheduleTemplateRepository.save(scheduleTemplate);
-
+        var scheduleTemplate = scheduleTemplateService.createScheduleTemplate(request);
         var scheduleTemplateDto = scheduleTemplateMapper.toDto(scheduleTemplate);
 
         var uri = uriBuilder.path("/schedule-templates/{id}").buildAndExpand(scheduleTemplateDto.getId()).toUri();
@@ -85,14 +66,9 @@ public class ScheduleTemplateController {
         @PathVariable (name="id") Long id,
         @RequestBody ScheduleTemplateDto request
     ){
-        var scheduleTemplate = scheduleTemplateRepository.findById(id).orElse(null);
-        if(scheduleTemplate==null){
-            return ResponseEntity.notFound().build();
-        }
-
-        scheduleTemplateMapper.updateScheduleTemplate(request, scheduleTemplate);
-        scheduleTemplateRepository.saveAndFlush(scheduleTemplate);
-        return ResponseEntity.ok(scheduleTemplateMapper.toDto(scheduleTemplate));
+        return scheduleTemplateService.updateScheduleTemplate(id, request)
+            .map(scheduleTemplate -> ResponseEntity.ok(scheduleTemplateMapper.toDto(scheduleTemplate)))
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PatchMapping("/{id}")
@@ -100,24 +76,16 @@ public class ScheduleTemplateController {
         @PathVariable (name="id") Long id,
         @RequestBody ScheduleTemplateDto request
     ){
-        var scheduleTemplate = scheduleTemplateRepository.findById(id).orElse(null);
-        if(scheduleTemplate==null){
-            return ResponseEntity.notFound().build();
-        }
-
-        scheduleTemplateMapper.patchScheduleTemplate(request, scheduleTemplate);
-        scheduleTemplateRepository.saveAndFlush(scheduleTemplate);
-        return ResponseEntity.ok(scheduleTemplateMapper.toDto(scheduleTemplate));
+        return scheduleTemplateService.patchScheduleTemplate(id, request)
+            .map(scheduleTemplate -> ResponseEntity.ok(scheduleTemplateMapper.toDto(scheduleTemplate)))
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteScheduleTemplate(@PathVariable(name="id") Long id){
-        var scheduleTemplate = scheduleTemplateRepository.findById(id).orElse(null);
-        if(scheduleTemplate==null){
+        if(!scheduleTemplateService.deleteScheduleTemplate(id)){
             return ResponseEntity.notFound().build();
         }
-
-        scheduleTemplateRepository.delete(scheduleTemplate);
         return ResponseEntity.noContent().build();
     }
 }

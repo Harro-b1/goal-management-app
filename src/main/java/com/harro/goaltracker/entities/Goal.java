@@ -1,5 +1,7 @@
 package com.harro.goaltracker.entities;
 
+import java.time.LocalDate;
+
 import com.harro.goaltracker.enums.PriorityLevel;
 
 import jakarta.persistence.*;
@@ -36,4 +38,7 @@ public class Goal {
     @Enumerated(EnumType.STRING)
     @Column(name = "priority")
     private PriorityLevel priority;
+
+    @Column(name = "finish_by_date")
+    private LocalDate finishByDate;
 }

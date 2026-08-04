@@ -1,5 +1,7 @@
 package com.harro.goaltracker.dtos;
 
+import java.time.LocalDate;
+
 import com.harro.goaltracker.enums.PriorityLevel;
 
 import lombok.Data;
@@ -12,4 +14,5 @@ public class GoalDto {
     private boolean completed;
     private Long category;
     private PriorityLevel priority;
+    private LocalDate finishByDate;
 }

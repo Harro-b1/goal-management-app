@@ -16,13 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.harro.goaltracker.dtos.EventTemplateDto;
-import com.harro.goaltracker.entities.EventTemplate;
-import com.harro.goaltracker.exceptions.InvalidReferenceException;
-import com.harro.goaltracker.exceptions.NullAssignmentException;
 import com.harro.goaltracker.mappers.EventTemplateMapper;
-import com.harro.goaltracker.repositories.EventTemplateRepository;
-import com.harro.goaltracker.repositories.GoalRepository;
-import com.harro.goaltracker.repositories.ScheduleTemplateRepository;
+import com.harro.goaltracker.services.EventTemplateService;
 
 import lombok.AllArgsConstructor;
 
@@ -31,27 +26,19 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 @RequestMapping("/event-templates")
 public class EventTemplateController {
-    private final EventTemplateRepository eventTemplateRepository;
-    private final GoalRepository goalRepository;
-    private final ScheduleTemplateRepository scheduleTemplateRepository;
+    private final EventTemplateService eventTemplateService;
     private final EventTemplateMapper eventTemplateMapper;
 
     @GetMapping
     public List<EventTemplateDto> getAllEventTemplates(){
-        List<EventTemplate> eventTemplates = eventTemplateRepository.findAll();
-
-        return eventTemplates.stream().map(eventTemplateMapper::toDto).toList();
+        return eventTemplateService.getAllEventTemplates().stream().map(eventTemplateMapper::toDto).toList();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<EventTemplateDto> getEventTemplate(@PathVariable Long id){
-        var eventTemplate = eventTemplateRepository.findById(id).orElse(null);
-
-        if(eventTemplate == null){
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok(eventTemplateMapper.toDto(eventTemplate));
+        return eventTemplateService.getEventTemplate(id)
+            .map(eventTemplate -> ResponseEntity.ok(eventTemplateMapper.toDto(eventTemplate)))
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
@@ -59,29 +46,7 @@ public class EventTemplateController {
         @RequestBody EventTemplateDto request,
         UriComponentsBuilder uriBuilder
     ){
-        request.setId(null);
-        var eventTemplate = eventTemplateMapper.toEntity(request);
-
-        if(request.getScheduleTemplate() == null){
-            throw new NullAssignmentException("scheduleTemplate");
-        }
-
-        var scheduleTemplate = scheduleTemplateRepository.findById(request.getScheduleTemplate()).orElse(null);
-        if(scheduleTemplate == null){
-            throw new InvalidReferenceException("scheduleTemplate");
-        }
-        eventTemplate.setScheduleTemplate(scheduleTemplate);
-
-        if(request.getGoal() != null){
-            var goal = goalRepository.findById(request.getGoal()).orElse(null);
-            if(goal == null){
-                throw new InvalidReferenceException("goal");
-            }
-            eventTemplate.setGoal(goal);
-        }
-
-        eventTemplateRepository.save(eventTemplate);
-
+        var eventTemplate = eventTemplateService.createEventTemplate(request);
         var eventTemplateDto = eventTemplateMapper.toDto(eventTemplate);
 
         var uri = uriBuilder.path("/event-templates/{id}").buildAndExpand(eventTemplateDto.getId()).toUri();
@@ -93,35 +58,9 @@ public class EventTemplateController {
         @PathVariable(name="id") Long id,
         @RequestBody EventTemplateDto request
     ){
-        var eventTemplate = eventTemplateRepository.findById(id).orElse(null);
-        if(eventTemplate==null){
-            return ResponseEntity.notFound().build();
-        }
-
-        if(request.getScheduleTemplate() == null){
-            throw new NullAssignmentException("scheduleTemplate");
-        }
-
-        var scheduleTemplate = scheduleTemplateRepository.findById(request.getScheduleTemplate()).orElse(null);
-        if(scheduleTemplate == null){
-            throw new InvalidReferenceException("scheduleTemplate");
-        }
-
-        eventTemplate.setScheduleTemplate(scheduleTemplate);
-
-        if(request.getGoal() != null){
-            var goal = goalRepository.findById(request.getGoal()).orElse(null);
-            if(goal == null){
-                throw new InvalidReferenceException("goal");
-            }
-            eventTemplate.setGoal(goal);
-        }else{
-            eventTemplate.setGoal(null);
-        }
-
-        eventTemplateMapper.updateEventTemplate(request, eventTemplate);
-        eventTemplateRepository.save(eventTemplate);
-        return ResponseEntity.ok(eventTemplateMapper.toDto(eventTemplate));
+        return eventTemplateService.updateEventTemplate(id, request)
+            .map(eventTemplate -> ResponseEntity.ok(eventTemplateMapper.toDto(eventTemplate)))
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PatchMapping("/{id}")
@@ -129,40 +68,16 @@ public class EventTemplateController {
         @PathVariable(name="id") Long id,
         @RequestBody EventTemplateDto request
     ){
-        var eventTemplate = eventTemplateRepository.findById(id).orElse(null);
-        if(eventTemplate==null){
-            return ResponseEntity.notFound().build();
-        }
-
-        if(request.getScheduleTemplate() != null){
-            var scheduleTemplate = scheduleTemplateRepository.findById(request.getScheduleTemplate()).orElse(null);
-            if(scheduleTemplate == null){
-                throw new InvalidReferenceException("scheduleTemplate");
-            }
-            eventTemplate.setScheduleTemplate(scheduleTemplate);
-        }
-
-        if(request.getGoal() != null){
-            var goal = goalRepository.findById(request.getGoal()).orElse(null);
-            if(goal == null){
-                throw new InvalidReferenceException("goal");
-            }
-            eventTemplate.setGoal(goal);
-        }
-
-        eventTemplateMapper.patchEventTemplate(request, eventTemplate);
-        eventTemplateRepository.save(eventTemplate);
-        return ResponseEntity.ok(eventTemplateMapper.toDto(eventTemplate));
+        return eventTemplateService.patchEventTemplate(id, request)
+            .map(eventTemplate -> ResponseEntity.ok(eventTemplateMapper.toDto(eventTemplate)))
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEventTemplate(@PathVariable(name="id") Long id){
-        var eventTemplate = eventTemplateRepository.findById(id).orElse(null);
-        if(eventTemplate == null){
+        if(!eventTemplateService.deleteEventTemplate(id)){
             return ResponseEntity.notFound().build();
         }
-
-        eventTemplateRepository.delete(eventTemplate);
         return ResponseEntity.noContent().build();
     }
 }

@@ -1,7 +1,6 @@
 package com.harro.goaltracker.controllers;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.format.annotation.DateTimeFormat;
@@ -20,17 +19,11 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.harro.goaltracker.dtos.EventDto;
 import com.harro.goaltracker.dtos.ScheduleDto;
-import com.harro.goaltracker.entities.Event;
-import com.harro.goaltracker.entities.EventTemplate;
-import com.harro.goaltracker.entities.Schedule;
 import com.harro.goaltracker.mappers.EventMapper;
 import com.harro.goaltracker.mappers.ScheduleMapper;
-import com.harro.goaltracker.repositories.EventRepository;
-import com.harro.goaltracker.repositories.EventTemplateRepository;
-import com.harro.goaltracker.repositories.ScheduleRepository;
-import com.harro.goaltracker.repositories.ScheduleTemplateRepository;
+import com.harro.goaltracker.services.OllamaChatService;
+import com.harro.goaltracker.services.ScheduleService;
 
-import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 
 @RestController
@@ -38,29 +31,21 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 @RequestMapping("/schedules")
 public class ScheduleController {
-    private final ScheduleRepository scheduleRepository;
+    private final ScheduleService scheduleService;
     private final ScheduleMapper scheduleMapper;
-    private final EventRepository eventRepository;
     private final EventMapper eventMapper;
-    private final ScheduleTemplateRepository scheduleTemplateRepository;
-    private final EventTemplateRepository eventTemplateRepository;
+    private final OllamaChatService ollamaChatService;
 
     @GetMapping
     public List<ScheduleDto> getAllSchedules(){
-        List<Schedule> schedules = scheduleRepository.findAll();
-
-        return schedules.stream().map(scheduleMapper::toDto).toList();
+        return scheduleService.getAllSchedules().stream().map(scheduleMapper::toDto).toList();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ScheduleDto> getSchedule(@PathVariable Long id){
-        var schedule = scheduleRepository.findById(id).orElse(null);
-
-        if(schedule == null){
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok(scheduleMapper.toDto(schedule));
+        return scheduleService.getSchedule(id)
+            .map(schedule -> ResponseEntity.ok(scheduleMapper.toDto(schedule)))
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
@@ -68,9 +53,7 @@ public class ScheduleController {
         @RequestBody ScheduleDto request,
         UriComponentsBuilder uriBuilder
     ){
-        var schedule = scheduleMapper.toEntity(request);
-        scheduleRepository.save(schedule);
-
+        var schedule = scheduleService.createSchedule(request);
         var scheduleDto = scheduleMapper.toDto(schedule);
 
         var uri = uriBuilder.path("/schedules/{id}").buildAndExpand(scheduleDto.getId()).toUri();
@@ -82,15 +65,9 @@ public class ScheduleController {
         @PathVariable(name = "id") Long id,
         @RequestBody ScheduleDto request
     ){
-        var schedule = scheduleRepository.findById(id).orElse(null);
-        if(schedule == null){
-            return ResponseEntity.notFound().build();
-        }
-
-        scheduleMapper.updateSchedule(request, schedule);
-        scheduleRepository.saveAndFlush(schedule);
-
-        return ResponseEntity.ok(scheduleMapper.toDto(schedule));
+        return scheduleService.updateSchedule(id, request)
+            .map(schedule -> ResponseEntity.ok(scheduleMapper.toDto(schedule)))
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PatchMapping("/{id}")
@@ -98,70 +75,47 @@ public class ScheduleController {
         @PathVariable(name = "id") Long id,
         @RequestBody ScheduleDto request
     ){
-        var schedule = scheduleRepository.findById(id).orElse(null);
-        if(schedule == null){
-            return ResponseEntity.notFound().build();
-        }
-
-        scheduleMapper.patchSchedule(request, schedule);
-        scheduleRepository.saveAndFlush(schedule);
-
-        return ResponseEntity.ok(scheduleMapper.toDto(schedule));
+        return scheduleService.patchSchedule(id, request)
+            .map(schedule -> ResponseEntity.ok(scheduleMapper.toDto(schedule)))
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSchedule(@PathVariable(name="id") Long id){
-        var schedule = scheduleRepository.findById(id).orElse(null);
-        if(schedule==null){
+        if(!scheduleService.deleteSchedule(id)){
             return ResponseEntity.notFound().build();
         }
-
-        scheduleRepository.delete(schedule);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/events")
     public List<EventDto> getScheduleContents(@PathVariable Long id){
-        var schedule = scheduleRepository.findById(id).orElse(null);
-        if(schedule == null){
-            return new ArrayList<>();
-        }
-        List<Event> events = eventRepository.findBySchedule(schedule);
-
-        return events.stream().map(eventMapper::toDto).toList();
+        return scheduleService.getScheduleContents(id).stream().map(eventMapper::toDto).toList();
     }
 
     @GetMapping("/getByDate/{date}")
     public ResponseEntity<ScheduleDto> getScheduleByDate(@PathVariable @DateTimeFormat(pattern = "dd-MM-yyyy") LocalDate date){
-        var schedule = scheduleRepository.getByDate(date).orElse(null);
-        if(schedule == null){
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok(scheduleMapper.toDto(schedule));
+        return scheduleService.getScheduleByDate(date)
+            .map(schedule -> ResponseEntity.ok(scheduleMapper.toDto(schedule)))
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @Transactional
+    @GetMapping("/chat/{message}")
+    public String chat(@PathVariable(name="message") String message){
+        return ollamaChatService.chat(message);
+    }
+
     @PostMapping("/template/{id}")
     public ResponseEntity<ScheduleDto> makeScheduleWithTemplate(@PathVariable(name = "id") Long templateId,
         @RequestBody ScheduleDto request,
         UriComponentsBuilder uriBuilder
     ){
-        var template = scheduleTemplateRepository.findById(templateId).orElse(null);
-        if(template == null){
-            return ResponseEntity.notFound().build();
-        }
-        List<EventTemplate> eventTemplates = eventTemplateRepository.findByScheduleTemplate(template);
-
-        var schedule = scheduleMapper.toEntity(request);
-        scheduleRepository.save(schedule);
-
-        List<Event> events = eventTemplates.stream().map(x -> eventMapper.toEvent(x, schedule)).toList();
-        eventRepository.saveAll(events);
-
-        var scheduleDto = scheduleMapper.toDto(schedule);
-
-        var uri = uriBuilder.path("/schedules/{id}").buildAndExpand(scheduleDto.getId()).toUri();
-        return ResponseEntity.created(uri).body(scheduleDto);
+        return scheduleService.makeScheduleWithTemplate(templateId, request)
+            .map(schedule -> {
+                var scheduleDto = scheduleMapper.toDto(schedule);
+                var uri = uriBuilder.path("/schedules/{id}").buildAndExpand(scheduleDto.getId()).toUri();
+                return ResponseEntity.created(uri).body(scheduleDto);
+            })
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }

@@ -2,12 +2,12 @@ INSERT INTO categories (name) VALUES
     ('Health'),
     ('Career');
 
-INSERT INTO goals (name, description, completed, category, priority) VALUES
-    ('Run a 5k', 'Train and complete a 5k run', false, 1, 'MEDIUM'),
-    ('Drink more water', 'Aim for 8 glasses a day', false, 1, 'LOW'),
-    ('Learn Spring Boot', 'Build a full CRUD app with Spring Boot', false, 2, 'HIGH'),
-    ('Get promoted', 'Work towards a promotion this year', false, 2, 'HIGH'),
-    ('Read 12 books', 'Read one book per month', false, 1, 'MEDIUM');
+INSERT INTO goals (name, description, completed, category, priority, finish_by_date) VALUES
+    ('Run a 5k', 'Train and complete a 5k run', false, 1, 'MEDIUM', '2026-09-15'),
+    ('Drink more water', 'Aim for 8 glasses a day', false, 1, 'LOW', NULL),
+    ('Learn Spring Boot', 'Build a full CRUD app with Spring Boot', false, 2, 'HIGH', '2026-10-01'),
+    ('Get promoted', 'Work towards a promotion this year', false, 2, 'HIGH', '2026-12-31'),
+    ('Read 12 books', 'Read one book per month', false, 1, 'MEDIUM', NULL);
 
 INSERT INTO schedules (date) VALUES
     ('2026-07-28'),

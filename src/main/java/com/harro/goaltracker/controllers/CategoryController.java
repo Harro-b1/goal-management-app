@@ -16,11 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.harro.goaltracker.dtos.CategoryDto;
-import com.harro.goaltracker.entities.Category;
 import com.harro.goaltracker.mappers.CategoryMapper;
-import com.harro.goaltracker.mappers.GoalMapper;
-import com.harro.goaltracker.repositories.CategoryRepository;
-import com.harro.goaltracker.repositories.GoalRepository;
+import com.harro.goaltracker.services.CategoryService;
 
 import lombok.AllArgsConstructor;
 
@@ -29,27 +26,19 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 @RequestMapping("/categories")
 public class CategoryController {
-    private final CategoryRepository categoryRepository;
+    private final CategoryService categoryService;
     private final CategoryMapper categoryMapper;
-    private final GoalRepository goalRepository;
-    private final GoalMapper goalMapper;
 
     @GetMapping
     public List<CategoryDto> getAllCategories(){
-        List<Category> categories = categoryRepository.findAll();
-
-        return categories.stream().map(categoryMapper::toDto).toList();
+        return categoryService.getAllCategories().stream().map(categoryMapper::toDto).toList();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<CategoryDto> getCategory(@PathVariable Long id){
-        var category = categoryRepository.findById(id).orElse(null);
-
-        if(category == null){
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok(categoryMapper.toDto(category));
+        return categoryService.getCategory(id)
+            .map(category -> ResponseEntity.ok(categoryMapper.toDto(category)))
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
@@ -57,10 +46,7 @@ public class CategoryController {
         @RequestBody CategoryDto request,
         UriComponentsBuilder uriBuilder
     ){
-        var category = categoryMapper.toEntity(request);
-        category.setId(null);
-        categoryRepository.save(category);
-
+        var category = categoryService.createCategory(request);
         var categoryDto = categoryMapper.toDto(category);
 
         var uri = uriBuilder.path("/categories/{id}").buildAndExpand(categoryDto.getId()).toUri();
@@ -72,15 +58,9 @@ public class CategoryController {
         @PathVariable (name="id") Long id,
         @RequestBody CategoryDto request
     ){
-        var category = categoryRepository.findById(id).orElse(null);
-        if(category == null){
-            return ResponseEntity.notFound().build();
-        }
-
-        categoryMapper.updateCategory(request, category);
-        categoryRepository.saveAndFlush(category);
-        
-        return ResponseEntity.ok(categoryMapper.toDto(category));
+        return categoryService.updateCategory(id, request)
+            .map(category -> ResponseEntity.ok(categoryMapper.toDto(category)))
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PatchMapping("/{id}")
@@ -88,30 +68,16 @@ public class CategoryController {
         @PathVariable (name="id") Long id,
         @RequestBody CategoryDto request
     ){
-        var category = categoryRepository.findById(id).orElse(null);
-        if(category == null){
-            return ResponseEntity.notFound().build();
-        }
-
-        categoryMapper.patchCategory(request, category);
-        categoryRepository.saveAndFlush(category);
-        
-        return ResponseEntity.ok(categoryMapper.toDto(category));
+        return categoryService.patchCategory(id, request)
+            .map(category -> ResponseEntity.ok(categoryMapper.toDto(category)))
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCategory(@PathVariable(name="id") Long id){
-        var category = categoryRepository.findById(id).orElse(null);
-        if(category == null){
+        if(!categoryService.deleteCategory(id)){
             return ResponseEntity.notFound().build();
         }
-
-        var goalsWithCategory = goalRepository.findAllByCategory(category);
-        var strippedGoals = goalsWithCategory.stream().map(goalMapper::stripCategory).toList();
-        goalRepository.saveAll(strippedGoals);
-
-        categoryRepository.delete(category);
-
         return ResponseEntity.noContent().build();
     }
 }

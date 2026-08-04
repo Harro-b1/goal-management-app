@@ -3,6 +3,8 @@ package com.harro.goaltracker.controllers;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
+
+import java.time.LocalDate;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -89,6 +91,33 @@ class GoalControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void createGoal_withFinishByDate_persistsAndReturnsIt() throws Exception {
+        GoalDto request = new GoalDto();
+        request.setName("Goal With Deadline");
+        request.setPriority(PriorityLevel.MEDIUM);
+        request.setFinishByDate(LocalDate.of(2026, 12, 31));
+
+        mockMvc.perform(post("/goals")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.finishByDate").value("2026-12-31"));
+    }
+
+    @Test
+    void createGoal_withoutFinishByDate_persistsWithNullFinishByDate() throws Exception {
+        GoalDto request = new GoalDto();
+        request.setName("No Deadline Goal");
+        request.setPriority(PriorityLevel.LOW);
+
+        mockMvc.perform(post("/goals")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.finishByDate").value(nullValue()));
+    }
+
+    @Test
     void createGoal_withInvalidCategory_returns422() throws Exception {
         GoalDto request = new GoalDto();
         request.setName("Bad Category Goal");
@@ -165,6 +194,33 @@ class GoalControllerTest extends AbstractIntegrationTest {
             .andExpect(jsonPath("$.category").value(nullValue()));
     }
 
+    // PUT is a full replacement: an omitted/null finishByDate must clear an existing one,
+    // same contract already exercised for category (see updateGoal_withNullCategory_clearsExistingCategory).
+    @Test
+    void updateGoal_withNullFinishByDate_clearsExistingFinishByDate() throws Exception {
+        GoalDto createRequest = new GoalDto();
+        createRequest.setName("Goal With Deadline");
+        createRequest.setPriority(PriorityLevel.MEDIUM);
+        createRequest.setFinishByDate(LocalDate.of(2026, 12, 31));
+
+        String createResponse = mockMvc.perform(post("/goals")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(createRequest)))
+            .andExpect(status().isCreated())
+            .andReturn().getResponse().getContentAsString();
+        Long id = objectMapper.readValue(createResponse, GoalDto.class).getId();
+
+        GoalDto updateRequest = new GoalDto();
+        updateRequest.setName("Goal With Deadline");
+        updateRequest.setPriority(PriorityLevel.MEDIUM);
+
+        mockMvc.perform(put("/goals/" + id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.finishByDate").value(nullValue()));
+    }
+
     @Test
     void patchGoal_updatesNameOnly_returnsOk() throws Exception {
         GoalDto request = new GoalDto();
@@ -224,6 +280,32 @@ class GoalControllerTest extends AbstractIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.category").value(1));
+    }
+
+    // PATCH's partial-update contract: omitting "finishByDate" must leave the existing
+    // value untouched, unlike PUT where an omitted/null finishByDate clears it.
+    @Test
+    void patchGoal_omittingFinishByDate_leavesFinishByDateUnchanged() throws Exception {
+        GoalDto createRequest = new GoalDto();
+        createRequest.setName("Goal With Deadline");
+        createRequest.setPriority(PriorityLevel.MEDIUM);
+        createRequest.setFinishByDate(LocalDate.of(2026, 12, 31));
+
+        String createResponse = mockMvc.perform(post("/goals")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(createRequest)))
+            .andExpect(status().isCreated())
+            .andReturn().getResponse().getContentAsString();
+        Long id = objectMapper.readValue(createResponse, GoalDto.class).getId();
+
+        GoalDto patchRequest = new GoalDto();
+        patchRequest.setName("Renamed, deadline untouched");
+
+        mockMvc.perform(patch("/goals/" + id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(patchRequest)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.finishByDate").value("2026-12-31"));
     }
 
     // Regression test: GoalDto.completed is a primitive boolean, so an omitted field

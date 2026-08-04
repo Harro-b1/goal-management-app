@@ -7,14 +7,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.harro.goaltracker.properties.OllamaProperties;
+import com.harro.goaltracker.services.EventExtractor;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
+import dev.langchain4j.service.AiServices;
 
 @Configuration
 @EnableConfigurationProperties(OllamaProperties.class)
-public class OllamaConfig {
-    
+public class ChatModelConfig {
+
     @Bean
     public ChatModel chatModel(OllamaProperties props){
         return OllamaChatModel.builder()
@@ -24,6 +26,13 @@ public class OllamaConfig {
                 .timeout(Duration.ofMinutes(3))
                 .topP(props.topP())
                 .topK(props.topK())
+                .build();
+    }
+
+    @Bean
+    public EventExtractor assistant(ChatModel chatModel){
+        return AiServices.builder(EventExtractor.class)
+                .chatModel(chatModel)
                 .build();
     }
 }

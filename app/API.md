@@ -33,10 +33,11 @@ The `400`/`409`/`422` messages above name the **DTO field** (camelCase), not the
   "description": "Train and complete a 5k run",
   "completed": false,
   "category": 1,
-  "priority": "MEDIUM"
+  "priority": "MEDIUM",
+  "finishByDate": "2026-12-31"
 }
 ```
-`category` is optional (nullable). `priority` is one of `"LOW" | "MEDIUM" | "HIGH"`.
+`category` is optional (nullable). `priority` is one of `"LOW" | "MEDIUM" | "HIGH"`. `finishByDate` is optional (nullable), ISO-8601 (`YYYY-MM-DD`).
 
 **`ScheduleDto`**
 ```json
@@ -114,9 +115,9 @@ Validation behavior on `PATCH` mirrors `PUT` for whatever *is* provided — an i
 | GET | `/goals/{id}` | – | `200` `GoalDto` / `404` | |
 | GET | `/goals/search?query={regex}` | – | `200` `GoalDto[]` | Regex match against `name` or `description` (MySQL `REGEXP`) |
 | GET | `/goals/chat?query={text}` | – | `200` `string` | Experimental — proxies to a local Ollama model via langchain4j. Not core to the app; don't build production UI against it |
-| POST | `/goals` | `GoalDto` | `201` `GoalDto` + `Location` header | `category` optional — if provided, must reference an existing category (`422` if not); `name`/`priority` required (`400` if missing — `priority` has a DB-level `DEFAULT`, but it only applies when the column is omitted from the `INSERT` entirely, which never happens here, so sending `null` still fails) |
-| PUT | `/goals/{id}` | `GoalDto` | `200` `GoalDto` / `404` | Same as create. Omitting/nulling `category` clears it (see PUT semantics above) |
-| PATCH | `/goals/{id}` | `GoalDto` | `200` `GoalDto` / `404` | Partial update — omitted fields (including `category`) left unchanged; invalid `category` still `422`. **Never touches `completed`** — use the `complete`/`uncomplete` endpoints below for that |
+| POST | `/goals` | `GoalDto` | `201` `GoalDto` + `Location` header | `category` optional — if provided, must reference an existing category (`422` if not); `name`/`priority` required (`400` if missing — `priority` has a DB-level `DEFAULT`, but it only applies when the column is omitted from the `INSERT` entirely, which never happens here, so sending `null` still fails). `finishByDate` optional (nullable) |
+| PUT | `/goals/{id}` | `GoalDto` | `200` `GoalDto` / `404` | Same as create. Omitting/nulling `category` or `finishByDate` clears it (see PUT semantics above) |
+| PATCH | `/goals/{id}` | `GoalDto` | `200` `GoalDto` / `404` | Partial update — omitted fields (including `category`, `finishByDate`) left unchanged; invalid `category` still `422`. **Never touches `completed`** — use the `complete`/`uncomplete` endpoints below for that |
 | PUT | `/goals/{id}/complete` | – | `200` `GoalDto` / `404` | Sets `completed: true`. No body |
 | PUT | `/goals/{id}/uncomplete` | – | `200` `GoalDto` / `404` | Sets `completed: false`. No body |
 | DELETE | `/goals/{id}` | – | `204` / `404` | **Strips** this goal from any `Event`/`EventTemplate` referencing it — those survive with `goal: null` |

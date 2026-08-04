@@ -10,6 +10,7 @@ import com.harro.goaltracker.dtos.EventDto;
 import com.harro.goaltracker.entities.Event;
 import com.harro.goaltracker.entities.EventTemplate;
 import com.harro.goaltracker.entities.Schedule;
+import com.harro.goaltracker.types.TimeSlot;
 
 @Mapper(componentModel = "spring")
 public interface EventMapper {
@@ -18,6 +19,7 @@ public interface EventMapper {
     EventDto toDto(Event event);
     @Mapping(target = "goal", ignore = true)
     @Mapping(target = "schedule", ignore = true)
+    @Mapping(target = "id", ignore = true)
     Event toEntity(EventDto dto);
 
     @Mapping(source = "schedule", target = "schedule")
@@ -37,4 +39,7 @@ public interface EventMapper {
     @Mapping(target="id",ignore=true)
     @Mapping(target="schedule",ignore=true)
     void patchEvent(EventDto request, @MappingTarget Event event);
+
+    @Mapping(target="duration", ignore = true)
+    TimeSlot toTimeSlot(Event event);
 }

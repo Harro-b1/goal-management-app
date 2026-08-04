@@ -17,6 +17,7 @@ CREATE TABLE goals (
     completed BOOLEAN NOT NULL DEFAULT FALSE,
     category BIGINT,
     priority ENUM('LOW', 'MEDIUM', 'HIGH') NOT NULL DEFAULT 'MEDIUM',
+    finish_by_date DATE,
     FOREIGN KEY (category) REFERENCES categories(id)
 );
 
