@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.harro.goaltracker.properties.OllamaProperties;
-import com.harro.goaltracker.services.EventExtractor;
+import com.harro.goaltracker.services.llm.EventExtractor;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;

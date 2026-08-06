@@ -18,7 +18,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.harro.goaltracker.dtos.GoalDto;
 import com.harro.goaltracker.mappers.GoalMapper;
-import com.harro.goaltracker.services.GoalService;
+import com.harro.goaltracker.services.crud.GoalService;
 
 import lombok.AllArgsConstructor;
 

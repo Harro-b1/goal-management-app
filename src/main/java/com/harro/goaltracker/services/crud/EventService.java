@@ -1,4 +1,4 @@
-package com.harro.goaltracker.services;
+package com.harro.goaltracker.services.crud;
 
 import java.util.List;
 import java.util.Optional;

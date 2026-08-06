@@ -1,4 +1,4 @@
-package com.harro.goaltracker.services;
+package com.harro.goaltracker.services.crud;
 
 import java.time.LocalDate;
 import java.util.List;

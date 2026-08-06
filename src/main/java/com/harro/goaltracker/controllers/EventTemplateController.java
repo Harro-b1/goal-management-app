@@ -17,7 +17,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.harro.goaltracker.dtos.EventTemplateDto;
 import com.harro.goaltracker.mappers.EventTemplateMapper;
-import com.harro.goaltracker.services.EventTemplateService;
+import com.harro.goaltracker.services.crud.EventTemplateService;
 
 import lombok.AllArgsConstructor;
 

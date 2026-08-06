@@ -21,8 +21,8 @@ import com.harro.goaltracker.dtos.EventDto;
 import com.harro.goaltracker.dtos.ScheduleDto;
 import com.harro.goaltracker.mappers.EventMapper;
 import com.harro.goaltracker.mappers.ScheduleMapper;
-import com.harro.goaltracker.services.OllamaChatService;
-import com.harro.goaltracker.services.ScheduleService;
+import com.harro.goaltracker.services.crud.ScheduleService;
+import com.harro.goaltracker.services.llm.OllamaChatService;
 
 import lombok.AllArgsConstructor;
 

@@ -17,7 +17,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.harro.goaltracker.dtos.CategoryDto;
 import com.harro.goaltracker.mappers.CategoryMapper;
-import com.harro.goaltracker.services.CategoryService;
+import com.harro.goaltracker.services.crud.CategoryService;
 
 import lombok.AllArgsConstructor;
 

@@ -1,4 +1,4 @@
-package com.harro.goaltracker.services;
+package com.harro.goaltracker.services.llm;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +24,6 @@ public class OllamaChatService {
 
     public String chat(String input){
 
-        return chatModel.chat(input);
+        return chatModel.chat(prompt + input);
     }
 }

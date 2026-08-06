@@ -19,7 +19,7 @@ import com.harro.goaltracker.dtos.EventTemplateDto;
 import com.harro.goaltracker.dtos.ScheduleTemplateDto;
 import com.harro.goaltracker.mappers.EventTemplateMapper;
 import com.harro.goaltracker.mappers.ScheduleTemplateMapper;
-import com.harro.goaltracker.services.ScheduleTemplateService;
+import com.harro.goaltracker.services.crud.ScheduleTemplateService;
 
 import lombok.AllArgsConstructor;
 
