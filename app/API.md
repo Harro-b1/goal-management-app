@@ -134,6 +134,7 @@ Validation behavior on `PATCH` mirrors `PUT` for whatever *is* provided — an i
 | PUT | `/schedules/{id}` | `ScheduleDto` | `200` `ScheduleDto` / `404` | Same `date` constraints as create |
 | PATCH | `/schedules/{id}` | `ScheduleDto` | `200` `ScheduleDto` / `404` | Partial update — omitted `date` leaves it unchanged. Still `409` on a duplicate `date` if provided |
 | DELETE | `/schedules/{id}` | – | `204` / `404` | **Cascades delete** to every `Event` on this schedule (unlike Category/Goal — the `Event.schedule` FK is `NOT NULL`, so there's no valid "unlinked" state) |
+| PUT | `/schedules/{id}/addEvents` | `EventDto[]` | `200` `EventDto[]` / `404` if schedule id doesn't exist | Bulk-creates one `Event` per array item, all attached to this schedule — each item's own `schedule` field is ignored and overwritten with the path id, so it doesn't need to be sent. Per item: `goal` optional (`422` if it references a nonexistent goal), `name`/`startTime`/`endTime` required (`400` if missing). The whole batch is atomic — if any item fails validation, none of the events in the request are persisted |
 | POST | `/schedules/template/{id}` | `ScheduleDto` | `201` `ScheduleDto` + `Location` header / `404` if template id doesn't exist | Instantiates a new `Schedule` (from the request body's `date`) plus one `Event` per `EventTemplate` on the given `ScheduleTemplate` |
 
 ## Schedule Templates — `/schedule-templates`

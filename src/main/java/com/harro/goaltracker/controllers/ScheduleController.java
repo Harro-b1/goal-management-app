@@ -100,9 +100,27 @@ public class ScheduleController {
             .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/chat/{message}")
-    public String chat(@PathVariable(name="message") String message){
-        return ollamaChatService.chat(message);
+    @GetMapping("/{id}/generateEvents")
+    public ResponseEntity<List<EventDto>> generateEvents(@PathVariable(name="id") Long id){
+        var eventList = scheduleService.generateSchedule(id).orElse(null);
+        if(eventList == null){
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(eventList.stream().map(eventMapper::toDto).toList());
+    }
+
+    @PutMapping("/{id}/addEvents")
+    public ResponseEntity<List<EventDto>> addEvents(
+        @PathVariable(name="id") Long id,
+        @RequestBody List<EventDto> requests
+    ){
+        var eventList = scheduleService.addEvents(id,requests).orElse(null);
+        if(eventList == null){
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(eventList.stream().map(eventMapper::toDto).toList());
     }
 
     @PostMapping("/template/{id}")

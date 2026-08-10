@@ -1,11 +1,14 @@
 package com.harro.goaltracker.services.crud;
 
+import java.lang.classfile.ClassFile.Option;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.harro.goaltracker.dtos.EventDto;
 import com.harro.goaltracker.dtos.ScheduleDto;
 import com.harro.goaltracker.entities.Event;
 import com.harro.goaltracker.entities.Schedule;
@@ -69,6 +72,29 @@ public class ScheduleService {
 
         scheduleRepository.delete(schedule);
         return true;
+    }
+
+    public Optional<List<Event>> generateSchedule(Long id){
+        var schedule = scheduleRepository.findById(id).orElse(null);
+        if(schedule == null){
+            return Optional.empty();
+        }
+
+        return null;
+    }
+
+    @Transactional
+    public Optional<List<Event>> addEvents(Long id, List<EventDto> eventRequests){
+        if(!scheduleRepository.existsById(id)){
+            return Optional.empty();
+        }
+        
+        List<Event> events = new ArrayList<>();
+        for(var e : eventRequests){
+            e.setSchedule(id);
+            events.add(eventService.createEvent(e));
+        }
+        return Optional.of(events);
     }
 
     @Transactional

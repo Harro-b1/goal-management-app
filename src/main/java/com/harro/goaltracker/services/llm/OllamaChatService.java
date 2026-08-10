@@ -23,7 +23,6 @@ public class OllamaChatService {
         }
 
     public String chat(String input){
-
         return chatModel.chat(prompt + input);
     }
 }

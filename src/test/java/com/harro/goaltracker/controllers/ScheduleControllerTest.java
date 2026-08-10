@@ -2,6 +2,7 @@ package com.harro.goaltracker.controllers;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -13,6 +14,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import tools.jackson.databind.ObjectMapper;
 import com.harro.goaltracker.AbstractIntegrationTest;
+import com.harro.goaltracker.dtos.EventDto;
 import com.harro.goaltracker.dtos.ScheduleDto;
 
 class ScheduleControllerTest extends AbstractIntegrationTest {
@@ -188,6 +192,142 @@ class ScheduleControllerTest extends AbstractIntegrationTest {
     void deleteSchedule_missingId_returns404() throws Exception {
         mockMvc.perform(delete("/schedules/9999"))
             .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void addEvents_existingSchedule_persistsAndReturnsCreatedEvents() throws Exception {
+        var scheduleId = createSchedule(LocalDate.of(2026, 8, 10));
+
+        EventDto first = new EventDto();
+        first.setName("Morning workout");
+        first.setStartTime(LocalTime.of(7, 0));
+        first.setEndTime(LocalTime.of(7, 30));
+
+        EventDto second = new EventDto();
+        second.setGoal(1L);
+        second.setName("Evening review");
+        second.setStartTime(LocalTime.of(20, 0));
+        second.setEndTime(LocalTime.of(20, 30));
+
+        mockMvc.perform(put("/schedules/" + scheduleId + "/addEvents")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(first, second))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(2)))
+            .andExpect(jsonPath("$[0].schedule").value(scheduleId))
+            .andExpect(jsonPath("$[0].goal").value(nullValue()))
+            .andExpect(jsonPath("$[1].schedule").value(scheduleId))
+            .andExpect(jsonPath("$[1].goal").value(1));
+
+        mockMvc.perform(get("/schedules/" + scheduleId + "/events"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(2)));
+    }
+
+    @Test
+    void addEvents_missingScheduleId_returns404() throws Exception {
+        EventDto request = new EventDto();
+        request.setName("Orphan event");
+        request.setStartTime(LocalTime.of(9, 0));
+        request.setEndTime(LocalTime.of(9, 30));
+
+        mockMvc.perform(put("/schedules/9999/addEvents")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(request))))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void addEvents_withEmptyList_returnsEmptyListAndCreatesNothing() throws Exception {
+        var scheduleId = createSchedule(LocalDate.of(2026, 8, 11));
+
+        mockMvc.perform(put("/schedules/" + scheduleId + "/addEvents")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of())))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    // Regression test: each EventDto's own `schedule` field must be ignored in favor
+    // of the path id - addEvents is always scoped to the schedule in the URL.
+    @Test
+    void addEvents_eventBodySpecifiesDifferentSchedule_usesPathIdInstead() throws Exception {
+        var scheduleId = createSchedule(LocalDate.of(2026, 8, 12));
+
+        EventDto request = new EventDto();
+        request.setSchedule(1L);
+        request.setName("Redirected event");
+        request.setStartTime(LocalTime.of(10, 0));
+        request.setEndTime(LocalTime.of(10, 30));
+
+        mockMvc.perform(put("/schedules/" + scheduleId + "/addEvents")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(request))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].schedule").value(scheduleId));
+    }
+
+    // Regression test: addEvents used to save each event in its own transaction, so
+    // a validation failure partway through the list (here: an invalid goal on the
+    // second event) still left earlier events in the same request persisted. Now
+    // ScheduleService#addEvents is @Transactional, so the whole batch rolls back
+    // together on any failure - this pins the resulting error response. (The actual
+    // rollback isn't independently observable from this test: AbstractIntegrationTest
+    // wraps the whole test method in its own outer transaction, so addEvents' nested
+    // @Transactional joins it rather than committing/rolling back on its own - see
+    // the class-level @Transactional notes in context.md.)
+    @Test
+    void addEvents_withInvalidGoalMidList_returns422() throws Exception {
+        var scheduleId = createSchedule(LocalDate.of(2026, 8, 13));
+
+        EventDto valid = new EventDto();
+        valid.setName("Would-be valid event");
+        valid.setStartTime(LocalTime.of(8, 0));
+        valid.setEndTime(LocalTime.of(8, 30));
+
+        EventDto invalidGoal = new EventDto();
+        invalidGoal.setGoal(9999L);
+        invalidGoal.setName("Bad goal event");
+        invalidGoal.setStartTime(LocalTime.of(9, 0));
+        invalidGoal.setEndTime(LocalTime.of(9, 30));
+
+        mockMvc.perform(put("/schedules/" + scheduleId + "/addEvents")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(valid, invalidGoal))))
+            .andExpect(status().is(422))
+            .andExpect(content().string("Invalid goal reference id"));
+    }
+
+    // Exercises NullAssignmentException via the events.name NOT NULL constraint -
+    // there's no application-level guard for this field, same as createEvent.
+    @Test
+    void addEvents_withNullName_returns400WithMessage() throws Exception {
+        var scheduleId = createSchedule(LocalDate.of(2026, 8, 14));
+
+        EventDto request = new EventDto();
+        request.setStartTime(LocalTime.of(9, 0));
+        request.setEndTime(LocalTime.of(9, 30));
+
+        mockMvc.perform(put("/schedules/" + scheduleId + "/addEvents")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(request))))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().string("name cannot be null"));
+    }
+
+    private Long createSchedule(LocalDate date) throws Exception {
+        ScheduleDto request = new ScheduleDto();
+        request.setDate(date);
+
+        var response = mockMvc.perform(post("/schedules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+        return objectMapper.readValue(response, ScheduleDto.class).getId();
     }
 
     // Regression test: unlike Category/Goal, deleting a Schedule cascades REMOVE to
