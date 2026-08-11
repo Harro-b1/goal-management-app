@@ -1,6 +1,7 @@
 package com.harro.goaltracker.controllers;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 import org.springframework.format.annotation.DateTimeFormat;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -99,8 +101,12 @@ public class ScheduleController {
     }
 
     @GetMapping("/{id}/generateEvents")
-    public ResponseEntity<List<EventDto>> generateEvents(@PathVariable(name="id") Long id){
-        var eventList = scheduleService.generateSchedule(id).orElse(null);
+    public ResponseEntity<List<EventDto>> generateEvents(
+        @PathVariable(name="id") Long id,
+        @RequestParam(name="start", defaultValue = "00:00:00") @DateTimeFormat(pattern =  "HH:mm:ss")LocalTime startTime,
+        @RequestParam(name="end", defaultValue = "23:59:59") @DateTimeFormat(pattern = "HH:mm:ss") LocalTime endTime
+    ){
+        var eventList = scheduleService.generateSchedule(id, startTime, endTime).orElse(null);
         if(eventList == null){
             return ResponseEntity.notFound().build();
         }

@@ -39,16 +39,30 @@ public record TimeSlot(LocalTime startTime, LocalTime endTime, Duration duration
         return simplifiedTimeSlots;
     }
 
-    public static List<TimeSlot> getFreeTimeSlots(List<TimeSlot> timeSlots){
+    public static List<TimeSlot> getFreeTimeSlots(List<TimeSlot> timeSlots, LocalTime startTime, LocalTime endTime){
         List<TimeSlot> simplifiedTimeSlots = simplifyTimeSlots(timeSlots);
         List<TimeSlot> freeTimeSlots = new ArrayList<>();
-        LocalTime currStart = LocalTime.MIN;
+        LocalTime currStart = startTime;
+        LocalTime currEnd = endTime;
+
         for(var t : simplifiedTimeSlots){
-            if(currStart != t.startTime) freeTimeSlots.add(new TimeSlot(currStart, t.startTime));
+            if(t.startTime.compareTo(currStart) < 0){
+                if(t.endTime.compareTo(currStart) > 0) currStart = t.endTime;
+                continue;
+            }
+                
+            if(t.endTime.compareTo(endTime) > 0){
+                if(t.startTime.compareTo(endTime) < 0){
+                    currEnd = t.startTime;
+                }
+                break;
+            }
+            if(!currStart.equals(t.startTime)) freeTimeSlots.add(new TimeSlot(currStart, t.startTime));
             currStart = t.endTime;
         }
 
-        if(currStart != LocalTime.MAX) freeTimeSlots.add(new TimeSlot(currStart, LocalTime.MAX));
+        if(currStart.compareTo(currEnd) < 0) freeTimeSlots.add(new TimeSlot(currStart, currEnd));
+        
 
         return freeTimeSlots;
     }

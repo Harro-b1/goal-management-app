@@ -1,6 +1,7 @@
 package com.harro.goaltracker.services.crud;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -76,7 +77,7 @@ public class ScheduleService {
         return true;
     }
 
-    public Optional<List<Event>> generateSchedule(Long id){
+    public Optional<List<Event>> generateSchedule(Long id, LocalTime startTime, LocalTime endTime){
         var schedule = scheduleRepository.findById(id).orElse(null);
         if(schedule == null){
             return Optional.empty();
@@ -84,7 +85,7 @@ public class ScheduleService {
 
         List<Event> events = getScheduleContents(id);
         List<TimeSlot> timeSlots = events.stream().map(eventMapper::toTimeSlot).toList();
-        List<TimeSlot> freeTimeSlots = TimeSlot.getFreeTimeSlots(timeSlots);
+        List<TimeSlot> freeTimeSlots = TimeSlot.getFreeTimeSlots(timeSlots, startTime, endTime);
 
         return null;
     }
