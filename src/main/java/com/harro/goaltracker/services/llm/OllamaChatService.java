@@ -16,7 +16,6 @@ import com.harro.goaltracker.types.TimeSlot;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.input.PromptTemplate;
-import lombok.AllArgsConstructor;
 
 @Service
 public class OllamaChatService {
