@@ -3,6 +3,11 @@ package com.harro.goaltracker.controllers;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -18,10 +23,13 @@ import java.time.LocalTime;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import dev.langchain4j.model.chat.ChatModel;
 import tools.jackson.databind.ObjectMapper;
 import com.harro.goaltracker.AbstractIntegrationTest;
 import com.harro.goaltracker.dtos.EventDto;
@@ -34,6 +42,11 @@ class ScheduleControllerTest extends AbstractIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    // generateEvents calls out to a real Ollama model via OllamaChatService - mocked
+    // here so these tests are deterministic and don't depend on a running local model.
+    @MockitoBean
+    private ChatModel chatModel;
 
     @Test
     void getAllSchedules_returnsSeededSchedules() throws Exception {
@@ -342,5 +355,82 @@ class ScheduleControllerTest extends AbstractIntegrationTest {
             .andExpect(status().isNotFound());
         mockMvc.perform(get("/events/2"))
             .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void generateEvents_scheduleWithNoEvents_returnsSingleGeneratedEventCoveringWholeWindow() throws Exception {
+        var scheduleId = createSchedule(LocalDate.of(2026, 8, 20));
+        when(chatModel.chat(anyString())).thenReturn("Deep work block");
+
+        mockMvc.perform(get("/schedules/" + scheduleId + "/generateEvents")
+                .param("start", "09:00:00")
+                .param("end", "17:00:00"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(1)))
+            .andExpect(jsonPath("$[0].name").value("Deep work block"))
+            .andExpect(jsonPath("$[0].startTime").value("09:00:00"))
+            .andExpect(jsonPath("$[0].endTime").value("17:00:00"))
+            .andExpect(jsonPath("$[0].id").value(nullValue()))
+            .andExpect(jsonPath("$[0].goal").value(nullValue()))
+            .andExpect(jsonPath("$[0].schedule").value(nullValue()));
+
+        verify(chatModel, times(1)).chat(anyString());
+    }
+
+    // Schedule 3 in data.sql has a single event, 20:00-21:00 ("Reading time") - the
+    // free window around it should split into two generated events, not one.
+    @Test
+    void generateEvents_scheduleWithOneEventMidWindow_returnsGeneratedEventsForFreeGapsOnly() throws Exception {
+        when(chatModel.chat(anyString())).thenReturn("Focused work");
+
+        mockMvc.perform(get("/schedules/3/generateEvents")
+                .param("start", "09:00:00")
+                .param("end", "22:00:00"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(2)))
+            .andExpect(jsonPath("$[0].startTime").value("09:00:00"))
+            .andExpect(jsonPath("$[0].endTime").value("20:00:00"))
+            .andExpect(jsonPath("$[1].startTime").value("21:00:00"))
+            .andExpect(jsonPath("$[1].endTime").value("22:00:00"));
+
+        verify(chatModel, times(2)).chat(anyString());
+    }
+
+    @Test
+    void generateEvents_missingScheduleId_returns404() throws Exception {
+        mockMvc.perform(get("/schedules/9999/generateEvents"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void generateEvents_noQueryParams_defaultsToFullDayWindow() throws Exception {
+        var scheduleId = createSchedule(LocalDate.of(2026, 8, 21));
+        when(chatModel.chat(anyString())).thenReturn("Whatever the day brings");
+
+        mockMvc.perform(get("/schedules/" + scheduleId + "/generateEvents"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(1)))
+            .andExpect(jsonPath("$[0].startTime").value("00:00:00"))
+            .andExpect(jsonPath("$[0].endTime").value("23:59:59"));
+    }
+
+    // Confirms the free TimeSlot's actual start/end/duration reach the model prompt,
+    // not just that some prompt was sent - see OllamaChatService/prompt.txt.
+    @Test
+    void generateEvents_passesFreeSlotDetailsToChatModelPrompt() throws Exception {
+        var scheduleId = createSchedule(LocalDate.of(2026, 8, 22));
+        when(chatModel.chat(anyString())).thenReturn("Generated activity");
+
+        mockMvc.perform(get("/schedules/" + scheduleId + "/generateEvents")
+                .param("start", "09:00:00")
+                .param("end", "17:00:00"))
+            .andExpect(status().isOk());
+
+        ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+        verify(chatModel).chat(promptCaptor.capture());
+        String prompt = promptCaptor.getValue();
+
+        assertTrue(prompt.contains("09:00"), "prompt did not contain the free slot's start time: " + prompt);
+        assertTrue(prompt.contains("17:00"), "prompt did not contain the free slot's end time: " + prompt);
     }
 }

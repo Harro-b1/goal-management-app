@@ -114,7 +114,6 @@ Validation behavior on `PATCH` mirrors `PUT` for whatever *is* provided — an i
 | GET | `/goals` | – | `200` `GoalDto[]` | |
 | GET | `/goals/{id}` | – | `200` `GoalDto` / `404` | |
 | GET | `/goals/search?query={regex}` | – | `200` `GoalDto[]` | Regex match against `name` or `description` (MySQL `REGEXP`) |
-| GET | `/goals/chat?query={text}` | – | `200` `string` | Experimental — proxies to a local Ollama model via langchain4j. Not core to the app; don't build production UI against it |
 | POST | `/goals` | `GoalDto` | `201` `GoalDto` + `Location` header | `category` optional — if provided, must reference an existing category (`422` if not); `name`/`priority` required (`400` if missing — `priority` has a DB-level `DEFAULT`, but it only applies when the column is omitted from the `INSERT` entirely, which never happens here, so sending `null` still fails). `finishByDate` optional (nullable) |
 | PUT | `/goals/{id}` | `GoalDto` | `200` `GoalDto` / `404` | Same as create. Omitting/nulling `category` or `finishByDate` clears it (see PUT semantics above) |
 | PATCH | `/goals/{id}` | `GoalDto` | `200` `GoalDto` / `404` | Partial update — omitted fields (including `category`, `finishByDate`) left unchanged; invalid `category` still `422`. **Never touches `completed`** — use the `complete`/`uncomplete` endpoints below for that |
@@ -130,6 +129,7 @@ Validation behavior on `PATCH` mirrors `PUT` for whatever *is* provided — an i
 | GET | `/schedules/{id}` | – | `200` `ScheduleDto` / `404` | |
 | GET | `/schedules/{id}/events` | – | `200` `EventDto[]` (empty array if id doesn't exist — no `404`) | All events on that schedule |
 | GET | `/schedules/getByDate/{date}` | – | `200` `ScheduleDto` / `404` | `date` path param format is `dd-MM-yyyy`, e.g. `/schedules/getByDate/28-07-2026` — **not** the same format the DTO serializes (`yyyy-MM-dd`) |
+| GET | `/schedules/{id}/generateEvents?start={HH:mm:ss}&end={HH:mm:ss}` | – | `200` `EventDto[]` / `404` if schedule id doesn't exist | Experimental — proxies to a local Ollama model via langchain4j. Computes the schedule's free time slots between `start` and `end` (defaults `00:00:00`–`23:59:59` if omitted) around its existing events, then asks the model to generate one activity name per free slot. Returned `EventDto`s are **not persisted** — `id`, `goal`, and `schedule` are always `null`; `POST` them to `/schedules/{id}/addEvents` to actually save any you want to keep. Not core to the app; don't build production UI against it without confirming it's meant to ship |
 | POST | `/schedules` | `ScheduleDto` | `201` `ScheduleDto` + `Location` header | `date` is `UNIQUE` and `NOT NULL` — duplicate → `409`, missing → `400` |
 | PUT | `/schedules/{id}` | `ScheduleDto` | `200` `ScheduleDto` / `404` | Same `date` constraints as create |
 | PATCH | `/schedules/{id}` | `ScheduleDto` | `200` `ScheduleDto` / `404` | Partial update — omitted `date` leaves it unchanged. Still `409` on a duplicate `date` if provided |

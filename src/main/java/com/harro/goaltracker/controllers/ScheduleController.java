@@ -106,12 +106,12 @@ public class ScheduleController {
         @RequestParam(name="start", defaultValue = "00:00:00") @DateTimeFormat(pattern =  "HH:mm:ss")LocalTime startTime,
         @RequestParam(name="end", defaultValue = "23:59:59") @DateTimeFormat(pattern = "HH:mm:ss") LocalTime endTime
     ){
-        var eventList = scheduleService.generateSchedule(id, startTime, endTime).orElse(null);
-        if(eventList == null){
+        var eventDtoList = scheduleService.generateSchedule(id, startTime, endTime).orElse(null);
+        if(eventDtoList == null){
             return ResponseEntity.notFound().build();
         }
 
-        return ResponseEntity.ok(eventList.stream().map(eventMapper::toDto).toList());
+        return ResponseEntity.ok(eventDtoList);
     }
 
     @PutMapping("/{id}/addEvents")

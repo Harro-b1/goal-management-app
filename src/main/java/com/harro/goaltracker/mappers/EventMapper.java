@@ -42,4 +42,9 @@ public interface EventMapper {
 
     @Mapping(target="duration", ignore = true)
     TimeSlot toTimeSlot(Event event);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "goal", ignore = true)
+    @Mapping(target = "schedule", ignore = true)
+    EventDto timeSlotToDto(TimeSlot timeSlot, String name);
 }

@@ -16,12 +16,13 @@ public record TimeSlot(LocalTime startTime, LocalTime endTime, Duration duration
             return timeSlots;
         }
 
-        Collections.sort(timeSlots, (t1, t2) -> t1.startTime().compareTo(t2.startTime()));
+        var sortedTimeSlots = new ArrayList<>(timeSlots); //in case timeSlots is an immutable list
+        Collections.sort(sortedTimeSlots, (t1, t2) -> t1.startTime().compareTo(t2.startTime()));
         List<TimeSlot> simplifiedTimeSlots = new ArrayList<>();
-        LocalTime currStart = timeSlots.get(0).startTime;
-        LocalTime currEnd = timeSlots.get(0).startTime;
+        LocalTime currStart = sortedTimeSlots.get(0).startTime;
+        LocalTime currEnd = sortedTimeSlots.get(0).startTime;
 
-        for(var t : timeSlots){
+        for(var t : sortedTimeSlots){
             if(currEnd.compareTo(t.startTime) < 0){
                 simplifiedTimeSlots.add(new TimeSlot(currStart, currEnd));
                 currStart = t.startTime;
@@ -63,7 +64,6 @@ public record TimeSlot(LocalTime startTime, LocalTime endTime, Duration duration
 
         if(currStart.compareTo(currEnd) < 0) freeTimeSlots.add(new TimeSlot(currStart, currEnd));
         
-
         return freeTimeSlots;
     }
 }

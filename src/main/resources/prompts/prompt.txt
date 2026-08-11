@@ -1,1 +1,1 @@
-Write the following answer as an event with a start time, a finish time and a name:
+Write an activity that you could do that could start at {{startTime}}, end at {{endTime}} and last for {{duration}}. The response should be only the name of the activity.

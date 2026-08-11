@@ -15,6 +15,7 @@ import com.harro.goaltracker.entities.Schedule;
 import com.harro.goaltracker.mappers.EventMapper;
 import com.harro.goaltracker.mappers.ScheduleMapper;
 import com.harro.goaltracker.repositories.ScheduleRepository;
+import com.harro.goaltracker.services.llm.OllamaChatService;
 import com.harro.goaltracker.types.TimeSlot;
 
 import jakarta.transaction.Transactional;
@@ -29,6 +30,7 @@ public class ScheduleService {
     private final ScheduleTemplateService scheduleTemplateService;
     private final EventTemplateService eventTemplateService;
     private final EventMapper eventMapper;
+    private final OllamaChatService ollamaChatService;
 
     public List<Schedule> getAllSchedules() {
         return scheduleRepository.findAll();
@@ -77,7 +79,7 @@ public class ScheduleService {
         return true;
     }
 
-    public Optional<List<Event>> generateSchedule(Long id, LocalTime startTime, LocalTime endTime){
+    public Optional<List<EventDto>> generateSchedule(Long id, LocalTime startTime, LocalTime endTime){
         var schedule = scheduleRepository.findById(id).orElse(null);
         if(schedule == null){
             return Optional.empty();
@@ -87,7 +89,8 @@ public class ScheduleService {
         List<TimeSlot> timeSlots = events.stream().map(eventMapper::toTimeSlot).toList();
         List<TimeSlot> freeTimeSlots = TimeSlot.getFreeTimeSlots(timeSlots, startTime, endTime);
 
-        return null;
+
+        return Optional.of(ollamaChatService.generateEvents(freeTimeSlots));
     }
 
     @Transactional
