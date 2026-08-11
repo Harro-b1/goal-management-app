@@ -1,6 +1,5 @@
 package com.harro.goaltracker.services.crud;
 
-import java.lang.classfile.ClassFile.Option;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,8 +11,10 @@ import com.harro.goaltracker.dtos.EventDto;
 import com.harro.goaltracker.dtos.ScheduleDto;
 import com.harro.goaltracker.entities.Event;
 import com.harro.goaltracker.entities.Schedule;
+import com.harro.goaltracker.mappers.EventMapper;
 import com.harro.goaltracker.mappers.ScheduleMapper;
 import com.harro.goaltracker.repositories.ScheduleRepository;
+import com.harro.goaltracker.types.TimeSlot;
 
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -26,6 +27,7 @@ public class ScheduleService {
     private final EventService eventService;
     private final ScheduleTemplateService scheduleTemplateService;
     private final EventTemplateService eventTemplateService;
+    private final EventMapper eventMapper;
 
     public List<Schedule> getAllSchedules() {
         return scheduleRepository.findAll();
@@ -79,6 +81,10 @@ public class ScheduleService {
         if(schedule == null){
             return Optional.empty();
         }
+
+        List<Event> events = getScheduleContents(id);
+        List<TimeSlot> timeSlots = events.stream().map(eventMapper::toTimeSlot).toList();
+        List<TimeSlot> freeTimeSlots = TimeSlot.getFreeTimeSlots(timeSlots);
 
         return null;
     }

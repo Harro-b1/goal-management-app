@@ -22,7 +22,6 @@ import com.harro.goaltracker.dtos.ScheduleDto;
 import com.harro.goaltracker.mappers.EventMapper;
 import com.harro.goaltracker.mappers.ScheduleMapper;
 import com.harro.goaltracker.services.crud.ScheduleService;
-import com.harro.goaltracker.services.llm.OllamaChatService;
 
 import lombok.AllArgsConstructor;
 
@@ -34,7 +33,6 @@ public class ScheduleController {
     private final ScheduleService scheduleService;
     private final ScheduleMapper scheduleMapper;
     private final EventMapper eventMapper;
-    private final OllamaChatService ollamaChatService;
 
     @GetMapping
     public List<ScheduleDto> getAllSchedules(){
