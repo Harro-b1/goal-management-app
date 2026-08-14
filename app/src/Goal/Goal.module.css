@@ -1,0 +1,13 @@
+.parent{
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+/* Goal.module.css */
+.goal{
+    background-color: #a93f3f;
+    width: 50%;
+    height: 50%;
+    /* remove margin-left: auto and margin-right */
+}

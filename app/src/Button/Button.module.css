@@ -1,0 +1,21 @@
+.btn{
+    margin-top: clamp(0.2rem, 0.2vw + 0.2rem, 2rem);
+    margin-left: clamp(0.2rem, 1vw + 0.2rem, 2rem);
+    padding-block: clamp(0.2rem, 0.2vw + 0.2rem, 4rem);
+    padding-inline: clamp(0.7rem, 0.5vw + 0.7rem, 4rem);
+    border-radius: 20px;
+    border: none;
+    background-color: #E6E6E6;
+}
+
+.btn:hover{
+    background-color: #f3f3f3;
+}
+
+.btn2{
+    margin-left: auto;
+}
+
+.btn3{
+    margin-right: 2rem;
+}
