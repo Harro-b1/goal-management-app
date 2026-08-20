@@ -1,0 +1,24 @@
+.header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: aquamarine;
+    padding: clamp(0.2rem, 0.5vw + 0.2rem, 4rem);
+    padding-left: clamp(0.2rem, 1.3vw + 0.2rem, 4rem);
+    border-radius: clamp(8px, 1vw + 4px, 20px);
+    font-size: clamp(1rem, 0.3vw + 1rem, 3rem);
+}
+
+.event{
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background-color: rgb(212, 255, 127);
+    padding: clamp(0.2rem, 0.5vw + 0.2rem, 4rem);
+    border-radius: clamp(8px, 0.5vw + 4px, 20px);
+    font-size: clamp(1rem, 0.1vw + 1rem, 3rem);
+    flex: 0;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+}

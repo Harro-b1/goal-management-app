@@ -3,7 +3,7 @@ import styles from './Button.module.css';
 function Button() {
 
     return (
-        <div style={{display: 'flex', gap: '0.2rem'}}>
+        <div style={{display: 'flex'}}>
             <button className={`${styles.btn}`}>
                 Home
             </button>

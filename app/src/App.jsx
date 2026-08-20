@@ -5,12 +5,12 @@ import Goal from './Goal/Goal.jsx'
 function App() {
 
   return (
-    <div style={{position: 'relative'}}>
-      <Button/>
-      <div style={{ display: 'flex', height: '100vh', gap: '1rem' }}>
-  <Calendar/>
-  <Goal/>
-</div>
+    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <Button />
+      <div style={{ display: 'flex', flex: 1, gap: '2rem', padding: 'clamp(0.2rem, 1.5vw + 0.2rem, 2rem)', minHeight: 0 }}>
+        <Calendar />
+        <Goal />
+      </div>
     </div>
 
   );
