@@ -1,1 +1,5 @@
-Write an activity that you could do that could start at {{startTime}}, end at {{endTime}} and last for {{duration}}. The response should be only the name of the activity.
+Give me an activity that I can start at {{startTime}}, finish at {{endTime}} and should take up {{duration}}. 
+
+It should not be any of the following activities: {{prevActivities}}
+
+Only respond with the name of the activity, no extra conversation or preamble.

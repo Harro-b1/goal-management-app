@@ -357,8 +357,10 @@ class ScheduleControllerTest extends AbstractIntegrationTest {
             .andExpect(status().isNotFound());
     }
 
+    // Default maxLen is 2h, so an 8h free window (09:00-17:00) is broken into
+    // four 2h chunks rather than one generated event covering the whole gap.
     @Test
-    void generateEvents_scheduleWithNoEvents_returnsSingleGeneratedEventCoveringWholeWindow() throws Exception {
+    void generateEvents_scheduleWithNoEvents_returnsGeneratedEventsChunkedByDefaultMaxLen() throws Exception {
         var scheduleId = createSchedule(LocalDate.of(2026, 8, 20));
         when(chatModel.chat(anyString())).thenReturn("Deep work block");
 
@@ -366,19 +368,22 @@ class ScheduleControllerTest extends AbstractIntegrationTest {
                 .param("start", "09:00:00")
                 .param("end", "17:00:00"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$", hasSize(1)))
+            .andExpect(jsonPath("$", hasSize(4)))
             .andExpect(jsonPath("$[0].name").value("Deep work block"))
             .andExpect(jsonPath("$[0].startTime").value("09:00:00"))
-            .andExpect(jsonPath("$[0].endTime").value("17:00:00"))
+            .andExpect(jsonPath("$[0].endTime").value("11:00:00"))
+            .andExpect(jsonPath("$[3].startTime").value("15:00:00"))
+            .andExpect(jsonPath("$[3].endTime").value("17:00:00"))
             .andExpect(jsonPath("$[0].id").value(nullValue()))
             .andExpect(jsonPath("$[0].goal").value(nullValue()))
             .andExpect(jsonPath("$[0].schedule").value(nullValue()));
 
-        verify(chatModel, times(1)).chat(anyString());
+        verify(chatModel, times(4)).chat(anyString());
     }
 
-    // Schedule 3 in data.sql has a single event, 20:00-21:00 ("Reading time") - the
-    // free window around it should split into two generated events, not one.
+    // Schedule 3 in data.sql has a single event, 20:00-21:00 ("Reading time"). The two
+    // free gaps this creates (09:00-20:00, 21:00-22:00) are each further chunked by the
+    // default 2h maxLen: the 11h gap becomes six 2h-or-less chunks, the 1h gap stays whole.
     @Test
     void generateEvents_scheduleWithOneEventMidWindow_returnsGeneratedEventsForFreeGapsOnly() throws Exception {
         when(chatModel.chat(anyString())).thenReturn("Focused work");
@@ -387,13 +392,15 @@ class ScheduleControllerTest extends AbstractIntegrationTest {
                 .param("start", "09:00:00")
                 .param("end", "22:00:00"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$", hasSize(2)))
+            .andExpect(jsonPath("$", hasSize(7)))
             .andExpect(jsonPath("$[0].startTime").value("09:00:00"))
-            .andExpect(jsonPath("$[0].endTime").value("20:00:00"))
-            .andExpect(jsonPath("$[1].startTime").value("21:00:00"))
-            .andExpect(jsonPath("$[1].endTime").value("22:00:00"));
+            .andExpect(jsonPath("$[0].endTime").value("11:00:00"))
+            .andExpect(jsonPath("$[5].startTime").value("19:00:00"))
+            .andExpect(jsonPath("$[5].endTime").value("20:00:00"))
+            .andExpect(jsonPath("$[6].startTime").value("21:00:00"))
+            .andExpect(jsonPath("$[6].endTime").value("22:00:00"));
 
-        verify(chatModel, times(2)).chat(anyString());
+        verify(chatModel, times(7)).chat(anyString());
     }
 
     @Test
@@ -402,20 +409,24 @@ class ScheduleControllerTest extends AbstractIntegrationTest {
             .andExpect(status().isNotFound());
     }
 
+    // Full day window (00:00-23:59:59) at the default 2h maxLen: eleven 2h chunks
+    // from 00:00-22:00, then a final under-2h remainder chunk to 23:59:59.
     @Test
-    void generateEvents_noQueryParams_defaultsToFullDayWindow() throws Exception {
+    void generateEvents_noQueryParams_defaultsToFullDayWindowChunkedByDefaultMaxLen() throws Exception {
         var scheduleId = createSchedule(LocalDate.of(2026, 8, 21));
         when(chatModel.chat(anyString())).thenReturn("Whatever the day brings");
 
         mockMvc.perform(get("/schedules/" + scheduleId + "/generateEvents"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$", hasSize(1)))
+            .andExpect(jsonPath("$", hasSize(12)))
             .andExpect(jsonPath("$[0].startTime").value("00:00:00"))
-            .andExpect(jsonPath("$[0].endTime").value("23:59:59"));
+            .andExpect(jsonPath("$[0].endTime").value("02:00:00"))
+            .andExpect(jsonPath("$[11].startTime").value("22:00:00"))
+            .andExpect(jsonPath("$[11].endTime").value("23:59:59"));
     }
 
-    // Confirms the free TimeSlot's actual start/end/duration reach the model prompt,
-    // not just that some prompt was sent - see OllamaChatService/prompt.txt.
+    // Confirms each chunked free TimeSlot's actual start/end reaches its own model
+    // prompt call, not just that some prompt was sent - see OllamaChatService/prompt.txt.
     @Test
     void generateEvents_passesFreeSlotDetailsToChatModelPrompt() throws Exception {
         var scheduleId = createSchedule(LocalDate.of(2026, 8, 22));
@@ -427,10 +438,61 @@ class ScheduleControllerTest extends AbstractIntegrationTest {
             .andExpect(status().isOk());
 
         ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
-        verify(chatModel).chat(promptCaptor.capture());
-        String prompt = promptCaptor.getValue();
+        verify(chatModel, times(4)).chat(promptCaptor.capture());
+        List<String> prompts = promptCaptor.getAllValues();
 
-        assertTrue(prompt.contains("09:00"), "prompt did not contain the free slot's start time: " + prompt);
-        assertTrue(prompt.contains("17:00"), "prompt did not contain the free slot's end time: " + prompt);
+        assertTrue(prompts.get(0).contains("09:00"), "first prompt did not contain the first chunk's start time: " + prompts.get(0));
+        assertTrue(prompts.get(0).contains("11:00"), "first prompt did not contain the first chunk's end time: " + prompts.get(0));
+        assertTrue(prompts.get(3).contains("15:00"), "last prompt did not contain the last chunk's start time: " + prompts.get(3));
+        assertTrue(prompts.get(3).contains("17:00"), "last prompt did not contain the last chunk's end time: " + prompts.get(3));
+    }
+
+    // maxLen is an explicit ISO-8601 duration query param - confirms a smaller value
+    // produces more, smaller chunks than the 2h default.
+    @Test
+    void generateEvents_customMaxLen_producesSmallerChunks() throws Exception {
+        var scheduleId = createSchedule(LocalDate.of(2026, 8, 23));
+        when(chatModel.chat(anyString())).thenReturn("Quick task");
+
+        mockMvc.perform(get("/schedules/" + scheduleId + "/generateEvents")
+                .param("start", "09:00:00")
+                .param("end", "10:00:00")
+                .param("maxLen", "PT30M"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(2)))
+            .andExpect(jsonPath("$[0].startTime").value("09:00:00"))
+            .andExpect(jsonPath("$[0].endTime").value("09:30:00"))
+            .andExpect(jsonPath("$[1].startTime").value("09:30:00"))
+            .andExpect(jsonPath("$[1].endTime").value("10:00:00"));
+
+        verify(chatModel, times(2)).chat(anyString());
+    }
+
+    // Each subsequent generateEvents prompt should list previously generated activity
+    // names, so the model is nudged away from repeating the same suggestion.
+    @Test
+    void generateEvents_multipleChunks_feedsPriorActivityNamesIntoLaterPrompts() throws Exception {
+        var scheduleId = createSchedule(LocalDate.of(2026, 8, 24));
+        when(chatModel.chat(anyString()))
+            .thenReturn("Read a book")
+            .thenReturn("Go for a walk");
+
+        mockMvc.perform(get("/schedules/" + scheduleId + "/generateEvents")
+                .param("start", "09:00:00")
+                .param("end", "11:00:00")
+                .param("maxLen", "PT1H"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(2)))
+            .andExpect(jsonPath("$[0].name").value("Read a book"))
+            .andExpect(jsonPath("$[1].name").value("Go for a walk"));
+
+        ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+        verify(chatModel, times(2)).chat(promptCaptor.capture());
+        List<String> prompts = promptCaptor.getAllValues();
+
+        assertTrue(!prompts.get(0).contains("Read a book"),
+            "first prompt should not reference any prior activity: " + prompts.get(0));
+        assertTrue(prompts.get(1).contains("Read a book"),
+            "second prompt did not reference the first chunk's generated activity: " + prompts.get(1));
     }
 }

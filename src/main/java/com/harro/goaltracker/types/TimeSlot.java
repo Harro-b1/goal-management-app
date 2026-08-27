@@ -6,9 +6,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public record TimeSlot(LocalTime startTime, LocalTime endTime, Duration duration) {
-    public TimeSlot(LocalTime startTime, LocalTime endTime){
-        this(startTime, endTime, Duration.between(startTime, endTime));
+public record TimeSlot(LocalTime startTime, LocalTime endTime) {
+
+    public Duration duration(){
+        return Duration.between(startTime, endTime);
     }
 
     public static List<TimeSlot> simplifyTimeSlots(List<TimeSlot> timeSlots){
@@ -65,5 +66,50 @@ public record TimeSlot(LocalTime startTime, LocalTime endTime, Duration duration
         if(currStart.compareTo(currEnd) < 0) freeTimeSlots.add(new TimeSlot(currStart, currEnd));
         
         return freeTimeSlots;
+    }
+
+    public List<TimeSlot> breakUpTimeSlot(Duration maxLen){
+        List<TimeSlot> brokenUpTimeSlots = new ArrayList<>();
+        TimeSlot last = this;
+        LocalTime sliceTime;
+        LocalTime snapped;
+
+        while(last.duration().compareTo(maxLen) > 0){
+            sliceTime = last.startTime.plus(maxLen);
+            snapped = getPrevHalfHour(sliceTime);
+
+            if(
+                (!((isOnHalfHourGrid(sliceTime)) || 
+                (getNextHalfHour(last.startTime).equals(snapped)))) && 
+                snapped.isAfter(last.startTime)
+            ){
+                sliceTime = snapped;
+            }
+            
+            brokenUpTimeSlots.add(new TimeSlot(last.startTime, sliceTime));
+            last = new TimeSlot(sliceTime, last.endTime);
+        }
+
+        brokenUpTimeSlots.add(last);
+        return brokenUpTimeSlots;
+    }
+
+    private static boolean isOnHalfHourGrid(LocalTime time){
+        return (time.getMinute() == 0 && time.getSecond() == 0 && time.getNano() == 0) || 
+        (time.getMinute() == 30 && time.getSecond() == 0 && time.getNano() == 0);
+    }
+
+    private static LocalTime getNextHalfHour(LocalTime time){
+        if(time.getMinute() >= 30){
+            return LocalTime.of(time.getHour() + 1, 0);
+        }
+        return LocalTime.of(time.getHour(), 30);
+    }
+
+    private static LocalTime getPrevHalfHour(LocalTime time){
+        if(time.getMinute() >= 30){
+            return LocalTime.of(time.getHour(), 30);
+        }
+        return LocalTime.of(time.getHour(), 0);
     }
 }

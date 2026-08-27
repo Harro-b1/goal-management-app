@@ -7,7 +7,8 @@ DROP TABLE IF EXISTS categories;
 
 CREATE TABLE categories (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL UNIQUE
+    name VARCHAR(255) NOT NULL,
+    CONSTRAINT categories__name UNIQUE (name)
 );
 
 CREATE TABLE goals (
@@ -23,7 +24,8 @@ CREATE TABLE goals (
 
 CREATE TABLE schedules (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    date DATE NOT NULL UNIQUE
+    date DATE NOT NULL,
+    CONSTRAINT schedules__date UNIQUE (date)
 );
 
 CREATE TABLE events (
@@ -39,7 +41,8 @@ CREATE TABLE events (
 
 CREATE TABLE schedule_templates (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL UNIQUE
+    name VARCHAR(255) NOT NULL,
+    CONSTRAINT schedule_templates__name UNIQUE (name)
 );
 
 CREATE TABLE event_templates (

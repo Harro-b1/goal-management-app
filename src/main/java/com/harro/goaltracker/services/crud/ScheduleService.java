@@ -1,5 +1,6 @@
 package com.harro.goaltracker.services.crud;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -79,16 +80,21 @@ public class ScheduleService {
         return true;
     }
 
-    public Optional<List<EventDto>> generateSchedule(Long id, LocalTime startTime, LocalTime endTime){
+    public Optional<List<EventDto>> generateSchedule(Long id, LocalTime startTime, LocalTime endTime, Duration maxLen){
         var schedule = scheduleRepository.findById(id).orElse(null);
         if(schedule == null){
             return Optional.empty();
         }
 
         List<Event> events = getScheduleContents(id);
-        List<TimeSlot> timeSlots = events.stream().map(eventMapper::toTimeSlot).toList();
-        List<TimeSlot> freeTimeSlots = TimeSlot.getFreeTimeSlots(timeSlots, startTime, endTime);
-
+        List<TimeSlot> freeTimeSlots = TimeSlot.getFreeTimeSlots(events.stream()
+                .map(eventMapper::toTimeSlot)
+                .toList(),
+                startTime,
+                endTime)
+            .stream()
+            .flatMap(t -> t.breakUpTimeSlot(maxLen).stream())
+            .toList();
 
         return Optional.of(ollamaChatService.generateEvents(freeTimeSlots));
     }

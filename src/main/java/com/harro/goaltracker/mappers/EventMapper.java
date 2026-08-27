@@ -39,8 +39,7 @@ public interface EventMapper {
     @Mapping(target="id",ignore=true)
     @Mapping(target="schedule",ignore=true)
     void patchEvent(EventDto request, @MappingTarget Event event);
-
-    @Mapping(target="duration", ignore = true)
+    
     TimeSlot toTimeSlot(Event event);
 
     @Mapping(target = "id", ignore = true)
