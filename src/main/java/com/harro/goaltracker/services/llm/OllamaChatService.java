@@ -2,6 +2,7 @@ package com.harro.goaltracker.services.llm;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ public class OllamaChatService {
 
     public OllamaChatService(ChatModel chatModel,
         @Value("classpath:prompts/prompt.txt") Resource promptResource,
+        @Value("classpath:prompts/freeTimePrompt.txt") Resource freeTimePromptResource,
         EventMapper eventMapper) throws IOException{
             this.chatModel = chatModel;
             String promptText = promptResource.getContentAsString(StandardCharsets.UTF_8);
@@ -34,14 +36,17 @@ public class OllamaChatService {
 
     public List<EventDto> generateEvents(List<TimeSlot> timeSlots){
         List<EventDto> events = new ArrayList<>();
+        StringBuilder prevActivities = new StringBuilder();
         for(var t : timeSlots){
             String eventName = chatModel.chat(
                 prompt.apply(Map.of(
                     "startTime", t.startTime(),
                     "endTime", t.endTime(),
-                    "duration", t.duration())
+                    "duration", t.duration(),
+                    "prevActivities", prevActivities.toString())
                 ).text()
             );
+            prevActivities.append(eventName + ", ");
             events.add(eventMapper.timeSlotToDto(t,eventName));
         }
         return events;

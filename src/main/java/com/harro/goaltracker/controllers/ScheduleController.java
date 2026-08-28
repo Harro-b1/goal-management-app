@@ -1,5 +1,6 @@
 package com.harro.goaltracker.controllers;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -104,9 +105,10 @@ public class ScheduleController {
     public ResponseEntity<List<EventDto>> generateEvents(
         @PathVariable(name="id") Long id,
         @RequestParam(name="start", defaultValue = "00:00:00") @DateTimeFormat(pattern =  "HH:mm:ss")LocalTime startTime,
-        @RequestParam(name="end", defaultValue = "23:59:59") @DateTimeFormat(pattern = "HH:mm:ss") LocalTime endTime
+        @RequestParam(name="end", defaultValue = "23:59:59") @DateTimeFormat(pattern = "HH:mm:ss") LocalTime endTime,
+        @RequestParam(name="maxLen", defaultValue = "PT2H") Duration maxLen
     ){
-        var eventDtoList = scheduleService.generateSchedule(id, startTime, endTime).orElse(null);
+        var eventDtoList = scheduleService.generateSchedule(id, startTime, endTime, maxLen).orElse(null);
         if(eventDtoList == null){
             return ResponseEntity.notFound().build();
         }
