@@ -39,6 +39,9 @@ context.md
 ### Env ###
 .env
 
+### Old duplicate app (removed) ###
+/app-duplicate/
+
 ### React (app/) ###
 /app/node_modules
 /app/.pnp

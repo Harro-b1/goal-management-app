@@ -5,7 +5,7 @@ A Spring Boot REST API + React frontend for tracking goals, scheduling events ag
 ## Stack
 
 - **Backend**: Spring Boot 4.1.0 (Spring Framework 7), Java 26, MySQL, Hibernate/JPA, MapStruct, Lombok
-- **Frontend**: React (Create React App), in `app/` — currently a bare scaffold, no UI built yet
+- **Frontend**: React (Vite), in `app/` — currently a bare scaffold, no UI built yet
 - **LLM (experimental)**: [langchain4j](https://github.com/langchain4j/langchain4j) backed by a local [Ollama](https://ollama.com/) model
 - **Testing**: JUnit 5, MockMvc, Testcontainers (real MySQL)
 - **CI**: GitHub Actions runs the test suite on every PR into `main`
@@ -54,7 +54,7 @@ npm install
 npm start
 ```
 
-Runs the dev server on `http://localhost:3000`. `app/package.json` proxies relative-path requests (e.g. `fetch('/goals')`) straight to the backend on port 8081, so no CORS setup is needed in development. See `app/README.md` for more.
+Runs the dev server on `http://localhost:5173`. `app/vite.config.js` proxies relative-path requests (e.g. `fetch('/goals')`) straight to the backend on port 8081, so no CORS setup is needed in development. See `app/README.md` for more.
 
 ### Tests
 
@@ -79,7 +79,7 @@ src/main/java/com/harro/goaltracker/
   exceptions/    typed exceptions + global exception handler
   types/         framework-agnostic value types (e.g. TimeSlot)
 
-app/             React frontend (Create React App)
+app/             React frontend (Vite)
 ```
 
 ## Documentation
